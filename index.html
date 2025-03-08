@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #messages { height: 300px; overflow-y: auto; border: 1px solid #ccc; margin-bottom: 10px; }
+    input { width: 80%; padding: 10px; }
+    button { padding: 10px; }
+  </style>
+</head>
+<body>
+  <div id="messages"></div>
+  <input id="input" type="text" placeholder="Scrivi un messaggio..."/>
+  <button onclick="sendMessage()">Invia</button>
+
+  <script>
+    const socket = new WebSocket('wss://tuo-dominio-su-render.com'); // Modifica con il tuo dominio Render
+    
+    socket.onmessage = function(event) {
+      const messages = document.getElementById('messages');
+      const message = document.createElement('div');
+      message.textContent = event.data;
+      messages.appendChild(message);
+    };
+
+    function sendMessage() {
+      const input = document.getElementById('input');
+      socket.send(input.value);
+      input.value = '';
+    }
+  </script>
+</body>
+</html>
