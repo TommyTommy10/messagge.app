@@ -1,73 +1,82 @@
-/* Stili generali */
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f5f5f5;
+  font-family: 'Arial', sans-serif;
+  background-color: #f0f4f8;
   margin: 0;
-  padding: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   height: 100vh;
 }
 
-/* Contenitore della chat */
-#messages {
-  width: 80%;
+.chat-container {
+  width: 90%;
   max-width: 600px;
-  height: 300px;
-  margin: 20px auto;
-  padding: 10px;
-  border: 2px solid #ccc;
+  background: #fff;
   border-radius: 10px;
-  background-color: #fff;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  background-color: #007bff;
+  color: #fff;
+  padding: 10px 20px;
+  text-align: center;
+}
+
+.chat-main {
+  flex: 1;
+  padding: 20px;
   overflow-y: auto;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background-color: #e9ecef;
 }
 
-/* Messaggi */
-#messages div {
-  padding: 8px 10px;
-  margin-bottom: 5px;
-  border-radius: 8px;
-  background-color: #e1f5fe;
-  color: #01579b;
-  font-size: 14px;
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* Input di testo e pulsante */
-input {
-  width: 70%;
+.chat-messages div {
+  background: #007bff;
+  color: #fff;
   padding: 10px;
-  border: 1px solid #ccc;
+  border-radius: 10px;
+  align-self: flex-start;
+  max-width: 70%;
+}
+
+.chat-messages .sent {
+  background: #ccc;
+  color: #333;
+  align-self: flex-end;
+}
+
+.chat-footer {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+#messageInput {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
   border-radius: 5px;
-  outline: none;
-  font-size: 14px;
   margin-right: 10px;
 }
 
-button {
-  padding: 10px 15px;
+#sendButton {
+  padding: 10px 20px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 14px;
 }
 
-button:hover {
+#sendButton:hover {
   background-color: #0056b3;
-}
-
-/* Responsive Design */
-@media (max-width: 600px) {
-  #messages {
-    width: 95%;
-    height: 250px;
-  }
-
-  input {
-    width: 60%;
-  }
 }
