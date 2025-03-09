@@ -1,24 +1,177 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Messaggistica Avanzata</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messagge.app</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="chat-container">
-    <header class="chat-header">
-      <h1>Messaggistica Avanzata</h1>
-    </header>
-    <main class="chat-main">
-      <div id="messages" class="chat-messages"></div>
-    </main>
-    <div class="chat-footer">
-      <input id="messageInput" type="text" placeholder="Scrivi un messaggio..." autocomplete="off" />
-      <button id="sendButton">Invia</button>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <h1>messagge.app</h1>
+            </div>
+            
+            <div class="user-profile">
+                <div class="avatar">
+                    <img src="/api/placeholder/80/80" alt="Profile Image">
+                    <span class="status-indicator online"></span>
+                </div>
+                <div class="user-info">
+                    <h3 class="username">Il tuo nome</h3>
+                    <p class="status">Online</p>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <div class="search-input">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Cerca conversazioni...">
+                </div>
+            </div>
+            
+            <nav class="conversations">
+                <h2>Conversazioni</h2>
+                <ul class="conversation-list">
+                    <!-- Conversation items will be dynamically added here -->
+                </ul>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <button class="new-chat-btn"><i class="fas fa-plus"></i> Nuova chat</button>
+                <div class="settings-btn">
+                    <i class="fas fa-cog"></i>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- Main chat area -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="current-chat-info">
+                    <div class="chat-avatar">
+                        <img src="/api/placeholder/50/50" alt="Current Chat">
+                        <span class="status-indicator online"></span>
+                    </div>
+                    <div>
+                        <h2 class="chat-name">Nome contatto</h2>
+                        <p class="chat-status">Online</p>
+                    </div>
+                </div>
+                <div class="chat-actions">
+                    <button class="action-btn"><i class="fas fa-phone"></i></button>
+                    <button class="action-btn"><i class="fas fa-video"></i></button>
+                    <button class="action-btn"><i class="fas fa-info-circle"></i></button>
+                </div>
+            </header>
+            
+            <div class="messages-container">
+                <div class="date-separator">
+                    <span>Oggi</span>
+                </div>
+                <!-- Messages will be dynamically added here -->
+            </div>
+            
+            <div class="message-composer">
+                <button class="emoji-btn"><i class="far fa-smile"></i></button>
+                <button class="attachment-btn"><i class="fas fa-paperclip"></i></button>
+                <div class="message-input">
+                    <input type="text" placeholder="Scrivi un messaggio...">
+                </div>
+                <button class="voice-btn"><i class="fas fa-microphone"></i></button>
+                <button class="send-btn"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </main>
+        
+        <!-- Right sidebar / Info panel (hidden by default on mobile) -->
+        <aside class="info-panel">
+            <header class="info-header">
+                <h2>Informazioni</h2>
+                <button class="close-info-btn"><i class="fas fa-times"></i></button>
+            </header>
+            
+            <div class="contact-profile">
+                <div class="contact-avatar">
+                    <img src="/api/placeholder/120/120" alt="Contact Profile">
+                </div>
+                <h3 class="contact-name">Nome contatto</h3>
+                <p class="contact-status">Online</p>
+            </div>
+            
+            <div class="info-section">
+                <h4>Contatto</h4>
+                <div class="info-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>email@esempio.com</span>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-phone"></i>
+                    <span>+39 123 456 7890</span>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h4>Media condivisi</h4>
+                <div class="media-grid">
+                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
+                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
+                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
+                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
+                </div>
+                <button class="view-all-btn">Vedi tutti</button>
+            </div>
+            
+            <div class="info-section">
+                <h4>Azioni</h4>
+                <button class="action-btn danger"><i class="fas fa-ban"></i> Blocca contatto</button>
+                <button class="action-btn danger"><i class="fas fa-trash"></i> Elimina chat</button>
+            </div>
+        </aside>
     </div>
-  </div>
-  <script src="app.js"></script>
+    
+    <!-- Templates for dynamic content -->
+    <template id="conversation-item-template">
+        <li class="conversation-item">
+            <div class="conversation-avatar">
+                <img src="" alt="Contact">
+                <span class="status-indicator"></span>
+            </div>
+            <div class="conversation-info">
+                <div class="conversation-header">
+                    <h3 class="conversation-name"></h3>
+                    <span class="conversation-time"></span>
+                </div>
+                <p class="conversation-preview"></p>
+            </div>
+            <div class="conversation-indicators">
+                <span class="unread-badge"></span>
+            </div>
+        </li>
+    </template>
+    
+    <template id="message-template">
+        <div class="message">
+            <div class="message-avatar">
+                <img src="" alt="Avatar">
+            </div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <p class="message-text"></p>
+                </div>
+                <div class="message-info">
+                    <span class="message-time"></span>
+                    <span class="message-status"></span>
+                </div>
+            </div>
+        </div>
+    </template>
+    
+    <script src="app.js"></script>
 </body>
 </html>
