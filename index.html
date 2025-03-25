@@ -131,619 +131,202 @@
     <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js"></script>
     <!-- Game Code -->
     <script>
-        class MinecraftClone {
-    class MinecraftClone {
+class MinecraftClone {
     constructor() {
         // Configurazione scena
         this.scene = new THREE.Scene();
-        // Impostiamo un colore di background di default
-        this.scene.background = new THREE.Color(0x87CEEB);
+        this.scene.background = new THREE.Color(0x87CEEB); // Colore del cielo
 
-        // Camera setup
+        // Configurazione camera
         this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 10, 20);
+        this.camera.position.set(0, 15, 30); // Posiziona la camera più in alto e più lontana
+        this.camera.lookAt(0, 0, 0);
 
-        // Renderer setup con antialias
-        this.renderer = new THREE.WebGLRenderer({ 
-            antialias: true,
-            alpha: false // Assicuriamoci che alpha sia false
-        });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setClearColor(0x87CEEB, 1); // Impostiamo un colore di clear
-        document.body.appendChild(this.renderer.domElement);
-
-        // Resto del codice del constructor...
-    }
-
-    // Modifica il setup del skybox
-    setupSkybox() {
-        // Per ora usiamo solo un colore di base
-        this.scene.background = new THREE.Color(0x87CEEB);
-        
-        // Il caricamento delle texture lo faremo più tardi
-        /*
-        const loader = new THREE.CubeTextureLoader();
-        const textureUrls = [
-            'texture/skybox/px.jpg', 'texture/skybox/nx.jpg',
-            'texture/skybox/py.jpg', 'texture/skybox/ny.jpg',
-            'texture/skybox/pz.jpg', 'texture/skybox/nz.jpg'
-        ];
-        
-        this.skybox = loader.load(textureUrls);
-        this.scene.background = this.skybox;
-        */
-    }
-
-    // Aggiorna il metodo animate
-    animate() {
-        requestAnimationFrame(() => this.animate());
-        
-        // Assicuriamoci che la scena venga renderizzata
-        if (this.renderer && this.scene && this.camera) {
-            this.update();
-            this.renderer.render(this.scene, this.camera);
-        }
-    }
-}
-
-// Avvio del gioco con gestione degli errori
-try {
-    const game = new MinecraftClone();
-    game.start();
-} catch (error) {
-    console.error('Errore durante l\'avvio del gioco:', error);
-    // Mostra un messaggio di errore all'utente
-    alert('Si è verificato un errore durante l\'avvio del gioco. Controlla la console per i dettagli.');
-}
-
-        // Game state
-        this.gameState = {
-            time: 0,
-            day: 1,
-            weather: 'clear',
-            paused: false,
-            isMultiplayer: false,
-            lastSave: Date.now()
-        };
-
-        // Scene setup
-        this.scene = new THREE.Scene();
-        this.setupSkybox();
-        
-        // Camera
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 10, 20);
-        
-        // Renderer
+        // Renderer setup
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.setClearColor(0x87CEEB, 1);
         document.body.appendChild(this.renderer.domElement);
 
-        // Game systems
-        this.systems = {
-            physics: new PhysicsSystem(this),
-            weather: new WeatherSystem(this),
-            mobs: new MobSystem(this),
-            crafting: new CraftingSystem(this),
-            multiplayer: new MultiplayerSystem(this),
-            sound: new SoundSystem(this)
-        };
-
-        // Player
-        this.player = {
-            health: this.config.maxHealth,
-            hunger: this.config.maxHunger,
-            inventory: [],
-            selectedSlot: null,
-            isJumping: false,
-            isSprinting: false,
-            velocity: new THREE.Vector3(),
-            onGround: false
-        };
-
-        // World data
-        this.chunks = new Map();
+        // Inizializzazione array blocchi
         this.blocks = [];
-        this.entities = [];
-        this.fluids = new Map();
 
-        // Initialize systems
-        this.initializeSystems();
+        // Setup base
+        this.setupLighting();
+        this.generateWorld();
         this.setupControls();
         this.setupInteractions();
-        this.loadGame();
     }
 
-    // Enhanced lighting system
     setupLighting() {
-        // Ambient light for base illumination
-        this.ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-        this.scene.add(this.ambientLight);
+        // Luce ambientale
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
 
-        // Sun
-        this.sunLight = new THREE.DirectionalLight(0xffffff, 1);
-        this.sunLight.position.set(100, 100, 100);
-        this.sunLight.castShadow = true;
-        this.scene.add(this.sunLight);
-
-        // Moon
-        this.moonLight = new THREE.DirectionalLight(0x4444ff, 0.25);
-        this.moonLight.position.set(-100, 100, -100);
-        this.scene.add(this.moonLight);
-
-        // Point lights for torches and other light sources
-        this.pointLights = new Map();
+        // Luce direzionale (sole)
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        sunLight.position.set(50, 50, 50);
+        sunLight.castShadow = true;
+        this.scene.add(sunLight);
     }
 
-    // Skybox setup
-    setupSkybox() {
-        const loader = new THREE.CubeTextureLoader();
-        const textureUrls = [
-            'texture/skybox/px.jpg', 'texture/skybox/nx.jpg',
-            'texture/skybox/py.jpg', 'texture/skybox/ny.jpg',
-            'texture/skybox/pz.jpg', 'texture/skybox/nz.jpg'
-        ];
-        
-        this.skybox = loader.load(textureUrls);
-        this.scene.background = this.skybox;
-    }
-
-    // Enhanced world generation
     generateWorld() {
-        const noise = new SimplexNoise();
+        // Generazione di un mondo base più piccolo per test
+        const worldSize = 20; // Dimensione del mondo ridotta per il test
         
-        for (let chunkX = -this.config.renderDistance; chunkX < this.config.renderDistance; chunkX++) {
-            for (let chunkZ = -this.config.renderDistance; chunkZ < this.config.renderDistance; chunkZ++) {
-                this.generateChunk(chunkX, chunkZ, noise);
+        // Materiali dei blocchi
+        const materials = {
+            grass: new THREE.MeshStandardMaterial({ color: 0x55AA55 }),
+            dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
+            stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
+        };
+
+        // Geometria del blocco
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+
+        // Genera il terreno
+        for (let x = -worldSize/2; x < worldSize/2; x++) {
+            for (let z = -worldSize/2; z < worldSize/2; z++) {
+                // Genera un'altezza semplice per il terreno
+                const height = Math.floor(
+                    Math.sin(x * 0.3) * 2 + 
+                    Math.cos(z * 0.3) * 2 + 
+                    5
+                );
+
+                // Crea i blocchi
+                for (let y = 0; y < height; y++) {
+                    let material;
+                    if (y === height - 1) {
+                        material = materials.grass;
+                    } else if (y > height - 4) {
+                        material = materials.dirt;
+                    } else {
+                        material = materials.stone;
+                    }
+
+                    const block = new THREE.Mesh(geometry, material);
+                    block.position.set(x, y, z);
+                    this.scene.add(block);
+                    this.blocks.push(block);
+                }
             }
         }
+
+        // Aggiungi alcuni alberi
+        this.generateTrees();
     }
 
-    generateChunk(chunkX, chunkZ, noise) {
-        const chunk = new Chunk(chunkX, chunkZ, this.config.chunkSize);
-        
-        for (let x = 0; x < this.config.chunkSize; x++) {
-            for (let z = 0; z < this.config.chunkSize; z++) {
-                const worldX = chunkX * this.config.chunkSize + x;
-                const worldZ = chunkZ * this.config.chunkSize + z;
-                
-                // Generate terrain height using multiple noise layers
-                const height = this.calculateTerrainHeight(worldX, worldZ, noise);
-                
-                // Generate different biomes
-                const biome = this.getBiome(worldX, worldZ, noise);
-                
-                // Generate terrain layers
-                this.generateTerrainLayers(chunk, x, z, height, biome);
-            }
-        }
+    generateTrees() {
+        const treeMaterial = new THREE.MeshStandardMaterial({ color: 0x4A2500 });
+        const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x1B4D00 });
 
-        // Add structures
-        this.generateStructures(chunk, noise);
-        
-        // Add to chunks map
-        this.chunks.set(`${chunkX},${chunkZ}`, chunk);
-    }
-
-    calculateTerrainHeight(x, z, noise) {
-        // Base terrain
-        let height = noise.noise2D(x * 0.01, z * 0.01) * 20;
-        
-        // Mountains
-        height += noise.noise2D(x * 0.05, z * 0.05) * 10;
-        
-        // Hills
-        height += noise.noise2D(x * 0.02, z * 0.02) * 5;
-        
-        return Math.floor(height + 50);
-    }
-
-    getBiome(x, z, noise) {
-        const temperature = noise.noise2D(x * 0.02, z * 0.02);
-        const moisture = noise.noise2D(x * 0.03, z * 0.03);
-        
-        if (temperature < -0.5) return 'snow';
-        if (temperature > 0.5 && moisture < -0.3) return 'desert';
-        if (moisture > 0.3) return 'jungle';
-        return 'plains';
-    }
-
-    generateTerrainLayers(chunk, x, z, height, biome) {
-        const worldY = height;
-        
-        // Add blocks based on biome
-        for (let y = 0; y < worldY; y++) {
-            let blockType;
+        // Genera alcuni alberi casuali
+        for (let i = 0; i < 5; i++) {
+            const x = Math.floor(Math.random() * 10 - 5);
+            const z = Math.floor(Math.random() * 10 - 5);
             
-            if (y === worldY - 1) {
-                blockType = this.getBiomeTopBlock(biome);
-            } else if (y > worldY - 4) {
-                blockType = 'dirt';
-            } else {
-                blockType = 'stone';
+            // Trova l'altezza del terreno in questo punto
+            const groundBlock = this.blocks.find(
+                block => block.position.x === x && 
+                        block.position.z === z && 
+                        block.material.color.getHex() === 0x55AA55
+            );
+
+            if (groundBlock) {
+                const y = groundBlock.position.y + 1;
+                
+                // Crea il tronco
+                const trunkGeometry = new THREE.BoxGeometry(0.6, 4, 0.6);
+                const trunk = new THREE.Mesh(trunkGeometry, treeMaterial);
+                trunk.position.set(x, y + 2, z);
+                this.scene.add(trunk);
+                this.blocks.push(trunk);
+
+                // Crea le foglie
+                const leavesGeometry = new THREE.BoxGeometry(3, 3, 3);
+                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+                leaves.position.set(x, y + 4.5, z);
+                this.scene.add(leaves);
+                this.blocks.push(leaves);
             }
-            
-            chunk.setBlock(x, y, z, blockType);
         }
     }
 
-    getBiomeTopBlock(biome) {
-        switch(biome) {
-            case 'snow': return 'snow';
-            case 'desert': return 'sand';
-            case 'jungle': return 'grass';
-            default: return 'grass';
-        }
-    }
+    setupControls() {
+        this.moveSpeed = 0.2;
+        this.keys = {};
 
-    generateStructures(chunk, noise) {
-        // Trees
-        this.generateTrees(chunk, noise);
-        
-        // Caves
-        this.generateCaves(chunk, noise);
-        
-        // Ores
-        this.generateOres(chunk);
-        
-        // Structures (houses, temples, etc.)
-        this.generateBuildings(chunk, noise);
-    }
+        // Gestione input tastiera
+        window.addEventListener('keydown', (e) => {
+            this.keys[e.key.toLowerCase()] = true;
+        });
 
-    // Physics system
-    updatePhysics() {
-        // Update player physics
-        this.updatePlayerPhysics();
-        
-        // Update entity physics
-        this.entities.forEach(entity => this.updateEntityPhysics(entity));
-        
-        // Update fluid physics
-        this.updateFluidPhysics();
-    }
+        window.addEventListener('keyup', (e) => {
+            this.keys[e.key.toLowerCase()] = false;
+        });
 
-    updatePlayerPhysics() {
-        if (!this.player.onGround) {
-            this.player.velocity.y += this.config.gravity * 0.016; // deltaTime = 1/60 ≈ 0.016
-        }
-
-        // Apply velocity
-        this.camera.position.add(this.player.velocity);
-        
-        // Check collisions
-        this.handleCollisions();
-    }
-
-    handleCollisions() {
-        const playerPosition = this.camera.position.clone();
-        const boundingBox = new THREE.Box3();
-        boundingBox.setFromCenterAndSize(
-            playerPosition,
-            new THREE.Vector3(0.6, 1.8, 0.6)
-        );
-
-        // Check collision with blocks
-        this.blocks.forEach(block => {
-            const blockBox = new THREE.Box3();
-            blockBox.setFromObject(block);
-            
-            if (boundingBox.intersectsBox(blockBox)) {
-                this.resolveCollision(blockBox);
+        // Mouse look
+        document.addEventListener('mousemove', (e) => {
+            if (document.pointerLockElement === this.renderer.domElement) {
+                this.camera.rotation.y -= e.movementX * 0.002;
+                this.camera.rotation.x -= e.movementY * 0.002;
+                
+                // Limita la rotazione verticale
+                this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
             }
+        });
+
+        // Pointer lock
+        this.renderer.domElement.addEventListener('click', () => {
+            this.renderer.domElement.requestPointerLock();
         });
     }
 
-    resolveCollision(blockBox) {
-        const playerPosition = this.camera.position;
-        const penetration = new THREE.Vector3();
+    updateMovement() {
+        if (!this.keys) return;
+
+        const moveSpeed = this.moveSpeed;
+        const direction = new THREE.Vector3();
+        const rotation = this.camera.rotation.clone();
+
+        // Calcola la direzione del movimento
+        if (this.keys['w']) direction.z -= Math.cos(rotation.y);
+        if (this.keys['s']) direction.z += Math.cos(rotation.y);
+        if (this.keys['a']) direction.x -= Math.cos(rotation.y - Math.PI/2);
+        if (this.keys['d']) direction.x += Math.cos(rotation.y - Math.PI/2);
         
-        // Calculate penetration depth
-        penetration.copy(playerPosition).sub(blockBox.getCenter(new THREE.Vector3()));
-        
-        // Resolve collision
-        if (Math.abs(penetration.y) < Math.abs(penetration.x) && 
-            Math.abs(penetration.y) < Math.abs(penetration.z)) {
-            // Vertical collision
-            this.player.velocity.y = 0;
-            this.player.onGround = penetration.y > 0;
-            playerPosition.y += penetration.y;
-        } else if (Math.abs(penetration.x) < Math.abs(penetration.z)) {
-            // X-axis collision
-            this.player.velocity.x = 0;
-            playerPosition.x += penetration.x;
-        } else {
-            // Z-axis collision
-            this.player.velocity.z = 0;
-            playerPosition.z += penetration.z;
+        // Normalizza e applica il movimento
+        if (direction.length() > 0) {
+            direction.normalize();
+            this.camera.position.x += direction.x * moveSpeed;
+            this.camera.position.z += direction.z * moveSpeed;
         }
     }
 
-    // Combat system
-    initializeCombat() {
-        this.weapons = {
-            sword: { damage: 5, range: 2 },
-            axe: { damage: 3, range: 2 },
-            bow: { damage: 4, range: 20 }
-        };
-        
-        this.mobs.types = {
-            zombie: { health: 20, damage: 3, speed: 0.5 },
-            skeleton: { health: 15, damage: 2, speed: 0.7 },
-            spider: { health: 12, damage: 2, speed: 0.8 }
-        };
-    }
-
-    attack(target) {
-        const weapon = this.player.selectedSlot;
-        if (!weapon || !this.weapons[weapon]) return;
-        
-        const weaponData = this.weapons[weapon];
-        const distance = this.camera.position.distanceTo(target.position);
-        
-        if (distance <= weaponData.range) {
-            target.health -= weaponData.damage;
-            if (target.health <= 0) {
-                this.killMob(target);
-            }
-        }
-    }
-
-    // Crafting system
-    initializeCrafting() {
-        this.recipes = {
-            wooden_planks: {
-                ingredients: [['wood', 1]],
-                result: { item: 'wooden_planks', count: 4 }
-            },
-            stick: {
-                ingredients: [['wooden_planks', 2]],
-                result: { item: 'stick', count: 4 }
-            },
-            wooden_pickaxe: {
-                ingredients: [
-                    ['wooden_planks', 3],
-                    ['stick', 2]
-                ],
-                result: { item: 'wooden_pickaxe', count: 1 }
-            }
-            // Add more recipes...
-        };
-    }
-
-    craftItem(recipe) {
-        const recipeData = this.recipes[recipe];
-        if (!recipeData) return false;
-        
-        // Check if player has ingredients
-        const hasIngredients = recipeData.ingredients.every(([item, count]) => 
-            this.player.inventory.filter(i => i === item).length >= count
-        );
-        
-        if (hasIngredients) {
-            // Remove ingredients
-            recipeData.ingredients.forEach(([item, count]) => {
-                for (let i = 0; i < count; i++) {
-                    const index = this.player.inventory.indexOf(item);
-                    this.player.inventory.splice(index, 1);
-                }
-            });
-            
-            // Add crafted item
-            for (let i = 0; i < recipeData.result.count; i++) {
-                this.player.inventory.push(recipeData.result.item);
-            }
-            
-            this.updateInventoryDisplay();
-            return true;
-        }
-        
-        return false;
-    }
-
-    // Weather system
-    updateWeather() {
-        const time = Date.now() * 0.001; // Convert to seconds
-        
-        // Update sky color based on time of day
-        const dayProgress = (time % this.config.dayLength) / this.config.dayLength;
-        this.updateSkyColor(dayProgress);
-        
-        // Update weather effects
-        if (this.gameState.weather !== 'clear') {
-            this.updateWeatherEffects();
-        }
-    }
-
-    updateSkyColor(dayProgress) {
-        const colors = {
-            night: new THREE.Color(0x001133),
-            dawn: new THREE.Color(0xff9999),
-            day: new THREE.Color(0x87CEEB),
-            dusk: new THREE.Color(0xff9966)
-        };
-        
-        let skyColor;
-        if (dayProgress < 0.25) { // Night to dawn
-            skyColor = colors.night.lerp(colors.dawn, dayProgress * 4);
-        } else if (dayProgress < 0.5) { // Dawn to day
-            skyColor = colors.dawn.lerp(colors.day, (dayProgress - 0.25) * 4);
-        } else if (dayProgress < 0.75) { // Day to dusk
-            skyColor = colors.day.lerp(colors.dusk, (dayProgress - 0.5) * 4);
-        } else { // Dusk to night
-            skyColor = colors.dusk.lerp(colors.night, (dayProgress - 0.75) * 4);
-        }
-        
-        this.scene.background = skyColor;
-    }
-
-    updateWeatherEffects() {
-        switch(this.gameState.weather) {
-            case 'rain':
-                this.updateRain();
-                break;
-            case 'snow':
-                this.updateSnow();
-                break;
-            case 'storm':
-                this.updateStorm();
-                break;
-        }
-    }
-
-    // Save system
-    saveGame() {
-        const saveData = {
-            player: {
-                position: this.camera.position.toArray(),
-                rotation: this.camera.rotation.toArray(),
-                inventory: this.player.inventory,
-                health: this.player.health,
-                hunger: this.player.hunger
-            },
-            gameState: this.gameState,
-            world: this.serializeWorld()
-        };
-        
-        localStorage.setItem('minecraft_save', JSON.stringify(saveData));
-        this.showSaveIndicator();
-    }
-
-    loadGame() {
-        const saveData = localStorage.getItem('minecraft_save');
-        if (saveData) {
-            const data = JSON.parse(saveData);
-            
-            // Restore player state
-            this.camera.position.fromArray(data.player.position);
-            this.camera.rotation.fromArray(data.player.rotation);
-            this.player.inventory = data.player.inventory;
-            this.player.health = data.player.health;
-            this.player.hunger = data.player.hunger;
-            
-            // Restore game state
-            this.gameState = data.gameState;
-            
-            // Restore world
-            this.deserializeWorld(data.world);
-            
-            this.updateInventoryDisplay();
-        }
-    }
-
-    // Main update loop
     update() {
-        // Update game systems
-        this.updatePhysics();
-        this.updateWeather();
-        this.systems.mobs.update();
-        this.systems.multiplayer.update();
-        
-        // Update player state
-        this.updatePlayerState();
-        
-        // Auto-save every 5 minutes
-        if (Date.now() - this.gameState.lastSave > 300000) {
-            this.saveGame();
-            this.gameState.lastSave = Date.now();
-        }
-        
-        // Render
-        this.renderer.render(this.scene, this.camera);
-    }
-
-    updatePlayerState() {
-        // Update hunger
-        if (this.player.isSprinting) {
-            this.player.hunger = Math.max(0, this.player.hunger - 0.01);
-        }
-        
-        // Health regeneration
-        if (this.player.hunger > 80 && this.player.health < this.config.maxHealth) {
-            this.player.health = Math.min(this.config.maxHealth, this.player.health + 0.1);
-        }
-        
-        // Update UI
-        this.updateHealthBar();
-        this.updateHungerBar();
-    }
-
-    // Start game
-    start() {
-        this.generateWorld();
-        this.animate();
+        this.updateMovement();
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
         this.update();
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    start() {
+        this.animate();
     }
 }
 
-// Initialize game systems
-class PhysicsSystem {
-    constructor(game) {
-        this.game = game;
-        // Physics system implementation
-    }
+// Avvia il gioco
+try {
+    const game = new MinecraftClone();
+    game.start();
+    console.log("Gioco avviato correttamente");
+} catch (error) {
+    console.error("Errore durante l'avvio del gioco:", error);
 }
-
-class WeatherSystem {
-    constructor(game) {
-        this.game = game;
-        // Weather system implementation
-    }
-}
-
-class MobSystem {
-    constructor(game) {
-        this.game = game;
-        // Mob system implementation
-    }
-}
-
-class CraftingSystem {
-    constructor(game) {
-        this.game = game;
-        // Crafting system implementation
-    }
-}
-
-class MultiplayerSystem {
-    constructor(game) {
-        this.game = game;
-        // Multiplayer system implementation
-    }
-}
-
-class SoundSystem {
-    constructor(game) {
-        this.game = game;
-        // Sound system implementation
-    }
-}
-
-class Chunk {
-    constructor(x, z, size) {
-        this.x = x;
-        this.z = z;
-        this.size = size;
-        this.blocks = new Map();
-    }
-
-    setBlock(x, y, z, type) {
-        this.blocks.set(`${x},${y},${z}`, type);
-    }
-
-    getBlock(x, y, z) {
-        return this.blocks.get(`${x},${y},${z}`);
-    }
-}
-
-// Start the game
-const game = new MinecraftClone();
-game.start();
 </script>
 </body>
 </html>
