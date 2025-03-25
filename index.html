@@ -132,19 +132,69 @@
     <!-- Game Code -->
     <script>
         class MinecraftClone {
+    class MinecraftClone {
     constructor() {
-        // Game configuration
-        this.config = {
-            worldSize: 64,
-            chunkSize: 16,
-            renderDistance: 4,
-            dayLength: 1200, // 20 minutes in seconds
-            maxHealth: 100,
-            maxHunger: 100,
-            gravity: -9.81,
-            jumpForce: 5,
-            sprintSpeed: 1.5
-        };
+        // Configurazione scena
+        this.scene = new THREE.Scene();
+        // Impostiamo un colore di background di default
+        this.scene.background = new THREE.Color(0x87CEEB);
+
+        // Camera setup
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 10, 20);
+
+        // Renderer setup con antialias
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            alpha: false // Assicuriamoci che alpha sia false
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setClearColor(0x87CEEB, 1); // Impostiamo un colore di clear
+        document.body.appendChild(this.renderer.domElement);
+
+        // Resto del codice del constructor...
+    }
+
+    // Modifica il setup del skybox
+    setupSkybox() {
+        // Per ora usiamo solo un colore di base
+        this.scene.background = new THREE.Color(0x87CEEB);
+        
+        // Il caricamento delle texture lo faremo più tardi
+        /*
+        const loader = new THREE.CubeTextureLoader();
+        const textureUrls = [
+            'texture/skybox/px.jpg', 'texture/skybox/nx.jpg',
+            'texture/skybox/py.jpg', 'texture/skybox/ny.jpg',
+            'texture/skybox/pz.jpg', 'texture/skybox/nz.jpg'
+        ];
+        
+        this.skybox = loader.load(textureUrls);
+        this.scene.background = this.skybox;
+        */
+    }
+
+    // Aggiorna il metodo animate
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        
+        // Assicuriamoci che la scena venga renderizzata
+        if (this.renderer && this.scene && this.camera) {
+            this.update();
+            this.renderer.render(this.scene, this.camera);
+        }
+    }
+}
+
+// Avvio del gioco con gestione degli errori
+try {
+    const game = new MinecraftClone();
+    game.start();
+} catch (error) {
+    console.error('Errore durante l\'avvio del gioco:', error);
+    // Mostra un messaggio di errore all'utente
+    alert('Si è verificato un errore durante l\'avvio del gioco. Controlla la console per i dettagli.');
+}
 
         // Game state
         this.gameState = {
