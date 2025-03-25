@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Minecraft Test</title>
+    <title>Minecraft Clone</title>
     <style>
         body { margin: 0; overflow: hidden; }
         #debugInfo {
@@ -15,56 +15,66 @@
             padding: 10px;
             z-index: 100;
         }
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
     <div id="debugInfo">Caricamento...</div>
+    <div id="crosshair"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-    class MinecraftTest {
+    class MinecraftGame {
         constructor() {
             this.debugElement = document.getElementById('debugInfo');
             this.debug("Inizializzazione...");
 
             try {
-                // Test Three.js
-                if (!THREE) {
-                    throw new Error("Three.js non caricato");
-                }
-                this.debug("Three.js caricato correttamente");
-
-                // Scena base
+                // Inizializzazione base
                 this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x87CEEB); // Cielo azzurro
                 this.debug("Scena creata");
 
-                // Camera
+                // Camera con posizione iniziale migliore
                 this.camera = new THREE.PerspectiveCamera(
                     75,
                     window.innerWidth / window.innerHeight,
                     0.1,
                     1000
                 );
-                this.camera.position.z = 5;
+                this.camera.position.set(0, 5, 10);
+                this.camera.lookAt(0, 0, 0);
                 this.debug("Camera configurata");
 
                 // Renderer
-                this.renderer = new THREE.WebGLRenderer();
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.shadowMap.enabled = true;
                 document.body.appendChild(this.renderer.domElement);
                 this.debug("Renderer creato");
 
-                // Cubo test
-                const geometry = new THREE.BoxGeometry();
-                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-                this.cube = new THREE.Mesh(geometry, material);
-                this.scene.add(this.cube);
-                this.debug("Cubo test aggiunto");
+                // Luci
+                this.setupLights();
+                this.debug("Luci configurate");
 
-                // Luce ambientale
-                const light = new THREE.AmbientLight(0x404040);
-                this.scene.add(light);
-                this.debug("Luce aggiunta");
+                // Mondo
+                this.blocks = [];
+                this.generateWorld();
+                this.debug("Mondo generato");
+
+                // Controlli
+                this.setupControls();
+                this.debug("Controlli configurati");
 
                 // Eventi resize
                 window.addEventListener('resize', () => {
@@ -80,6 +90,137 @@
             }
         }
 
+        setupLights() {
+            // Luce ambientale
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            this.scene.add(ambient);
+
+            // Luce direzionale (sole)
+            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+            sun.position.set(100, 100, 100);
+            sun.castShadow = true;
+            this.scene.add(sun);
+        }
+
+        generateWorld() {
+            // Geometria blocco
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+
+            // Materiali
+            const materials = {
+                grass: new THREE.MeshStandardMaterial({ color: 0x55AA55 }),
+                dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
+                stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
+            };
+
+            // Genera terreno base (più piccolo per test)
+            for (let x = -5; x <= 5; x++) {
+                for (let z = -5; z <= 5; z++) {
+                    // Altezza semplice
+                    const height = Math.floor(Math.sin(x * 0.3) * 2 + Math.cos(z * 0.3) * 2) + 3;
+
+                    for (let y = 0; y < height; y++) {
+                        let material;
+                        if (y === height - 1) {
+                            material = materials.grass;
+                        } else if (y > height - 3) {
+                            material = materials.dirt;
+                        } else {
+                            material = materials.stone;
+                        }
+
+                        const block = new THREE.Mesh(geometry, material);
+                        block.position.set(x, y, z);
+                        block.castShadow = true;
+                        block.receiveShadow = true;
+                        this.scene.add(block);
+                        this.blocks.push(block);
+                    }
+                }
+            }
+        }
+
+        setupControls() {
+            this.keys = {};
+            this.moveSpeed = 0.1;
+            this.rotationSpeed = 0.002;
+
+            // Controlli tastiera
+            window.addEventListener('keydown', (e) => {
+                this.keys[e.key.toLowerCase()] = true;
+            });
+
+            window.addEventListener('keyup', (e) => {
+                this.keys[e.key.toLowerCase()] = false;
+            });
+
+            // Controllo mouse
+            this.renderer.domElement.addEventListener('click', () => {
+                this.renderer.domElement.requestPointerLock();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === this.renderer.domElement) {
+                    this.camera.rotation.y -= e.movementX * this.rotationSpeed;
+                    this.camera.rotation.x -= e.movementY * this.rotationSpeed;
+                    this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
+                }
+            });
+
+            // Click per rompere blocchi
+            this.renderer.domElement.addEventListener('mousedown', (e) => {
+                if (document.pointerLockElement === this.renderer.domElement) {
+                    this.handleBlockBreak();
+                }
+            });
+        }
+
+        handleBlockBreak() {
+            const raycaster = new THREE.Raycaster();
+            const center = new THREE.Vector2(0, 0);
+            
+            raycaster.setFromCamera(center, this.camera);
+            const intersects = raycaster.intersectObjects(this.blocks);
+
+            if (intersects.length > 0) {
+                const block = intersects[0].object;
+                this.scene.remove(block);
+                this.blocks = this.blocks.filter(b => b !== block);
+            }
+        }
+
+        updateMovement() {
+            if (!this.keys) return;
+
+            const moveSpeed = this.moveSpeed;
+            const direction = new THREE.Vector3();
+
+            // Direzione frontale della camera
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(this.camera.quaternion);
+            forward.y = 0;
+            forward.normalize();
+
+            // Direzione laterale della camera
+            const right = new THREE.Vector3(1, 0, 0);
+            right.applyQuaternion(this.camera.quaternion);
+            right.y = 0;
+            right.normalize();
+
+            if (this.keys['w']) direction.add(forward);
+            if (this.keys['s']) direction.sub(forward);
+            if (this.keys['a']) direction.sub(right);
+            if (this.keys['d']) direction.add(right);
+            
+            if (this.keys[' ']) this.camera.position.y += moveSpeed; // Salta
+            if (this.keys['shift']) this.camera.position.y -= moveSpeed; // Scendi
+
+            if (direction.length() > 0) {
+                direction.normalize();
+                this.camera.position.addScaledVector(direction, moveSpeed);
+            }
+        }
+
         debug(message) {
             if (this.debugElement) {
                 this.debugElement.innerHTML += "<br>" + message;
@@ -91,21 +232,15 @@
             requestAnimationFrame(() => this.animate());
 
             try {
-                if (this.cube) {
-                    this.cube.rotation.x += 0.01;
-                    this.cube.rotation.y += 0.01;
-                }
-
-                if (this.renderer && this.scene && this.camera) {
-                    this.renderer.render(this.scene, this.camera);
-                }
+                this.updateMovement();
+                this.renderer.render(this.scene, this.camera);
             } catch (error) {
                 this.debug("ERRORE ANIMAZIONE: " + error.message);
             }
         }
 
         start() {
-            this.debug("Avvio animazione");
+            this.debug("Avvio gioco");
             this.animate();
         }
     }
@@ -113,7 +248,7 @@
     // Avvio con gestione errori
     window.onload = () => {
         try {
-            const game = new MinecraftTest();
+            const game = new MinecraftGame();
             game.start();
         } catch (error) {
             console.error("Errore fatale:", error);
