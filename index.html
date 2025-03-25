@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Survival Craft World</title>
+    <title>Advanced Survival Craft World</title>
     <style>
         body { 
             margin: 0; 
@@ -39,6 +39,8 @@
             justify-content: center;
             align-items: center;
             cursor: pointer;
+            background-size: cover;
+            image-rendering: pixelated;
         }
         #health-bar {
             position: fixed;
@@ -47,304 +49,651 @@
             width: 200px;
             height: 20px;
             background: red;
+            border: 2px solid white;
+            border-radius: 5px;
+        }
+        #hunger-bar {
+            position: fixed;
+            top: 45px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background: #8B4513;
+            border: 2px solid white;
+            border-radius: 5px;
+        }
+        #crafting-menu {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+        }
+        #weather-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 24px;
+        }
+        #day-night-cycle {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            color: white;
+        }
+        #save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: white;
+            display: none;
+        }
+        .mob {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: red;
+            border-radius: 50%;
         }
     </style>
 </head>
 <body>
     <div id="crosshair"></div>
     <div id="health-bar"></div>
+    <div id="hunger-bar"></div>
+    <div id="weather-indicator">☀️</div>
+    <div id="day-night-cycle">Day 1 - 06:00</div>
+    <div id="save-indicator">Game Saved!</div>
+    
     <div id="inventory">
         <div class="inventory-slot" data-item="wood">🌳</div>
         <div class="inventory-slot" data-item="stone">🪨</div>
         <div class="inventory-slot" data-item="axe">🪓</div>
+        <div class="inventory-slot" data-item="sword">⚔️</div>
+        <div class="inventory-slot" data-item="pickaxe">⛏️</div>
+        <div class="inventory-slot" data-item="bucket">🪣</div>
     </div>
 
+    <div id="crafting-menu">
+        <h2>Crafting</h2>
+        <div id="crafting-grid"></div>
+        <div id="crafting-result"></div>
+        <button onclick="game.craftItem()">Craft</button>
+    </div>
+
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js"></script>
+    <!-- Game Code -->
     <script>
-    class MinecraftClone {
-        constructor() {
-            // Configurazione scena
-            this.scene = new THREE.Scene();
-            this.scene.background = new THREE.Color(0x87CEEB);
+        class MinecraftClone {
+    constructor() {
+        // Game configuration
+        this.config = {
+            worldSize: 64,
+            chunkSize: 16,
+            renderDistance: 4,
+            dayLength: 1200, // 20 minutes in seconds
+            maxHealth: 100,
+            maxHunger: 100,
+            gravity: -9.81,
+            jumpForce: 5,
+            sprintSpeed: 1.5
+        };
 
-            // Telecamera
-            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            this.camera.position.set(0, 10, 20);
-            this.camera.lookAt(0, 0, 0);
+        // Game state
+        this.gameState = {
+            time: 0,
+            day: 1,
+            weather: 'clear',
+            paused: false,
+            isMultiplayer: false,
+            lastSave: Date.now()
+        };
 
-            // Renderer
-            this.renderer = new THREE.WebGLRenderer({ antialias: true });
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(this.renderer.domElement);
+        // Scene setup
+        this.scene = new THREE.Scene();
+        this.setupSkybox();
+        
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        this.camera.position.set(0, 10, 20);
+        
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(this.renderer.domElement);
 
-            // Stato gioco
-            this.blocks = [];
-            this.player = {
-                health: 100,
-                inventory: [],
-                selectedSlot: null
-            };
+        // Game systems
+        this.systems = {
+            physics: new PhysicsSystem(this),
+            weather: new WeatherSystem(this),
+            mobs: new MobSystem(this),
+            crafting: new CraftingSystem(this),
+            multiplayer: new MultiplayerSystem(this),
+            sound: new SoundSystem(this)
+        };
 
-            // Inizializzazione
-            this.setupLighting();
-            this.generateWorld();
-            this.setupControls();
-            this.setupInteractions();
-        }
+        // Player
+        this.player = {
+            health: this.config.maxHealth,
+            hunger: this.config.maxHunger,
+            inventory: [],
+            selectedSlot: null,
+            isJumping: false,
+            isSprinting: false,
+            velocity: new THREE.Vector3(),
+            onGround: false
+        };
 
-        setupLighting() {
-            // Illuminazione
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            this.scene.add(ambientLight);
+        // World data
+        this.chunks = new Map();
+        this.blocks = [];
+        this.entities = [];
+        this.fluids = new Map();
 
-            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
-            sunLight.position.set(50, 50, 50);
-            this.scene.add(sunLight);
-        }
+        // Initialize systems
+        this.initializeSystems();
+        this.setupControls();
+        this.setupInteractions();
+        this.loadGame();
+    }
 
-        generateWorld() {
-            // Texture loader
-            const textureLoader = new THREE.TextureLoader();
+    // Enhanced lighting system
+    setupLighting() {
+        // Ambient light for base illumination
+        this.ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        this.scene.add(this.ambientLight);
 
-            // Materiali
-            const materials = {
-                grass: new THREE.MeshStandardMaterial({ color: 0x00ff00 }),
-                dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-                stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
-            };
+        // Sun
+        this.sunLight = new THREE.DirectionalLight(0xffffff, 1);
+        this.sunLight.position.set(100, 100, 100);
+        this.sunLight.castShadow = true;
+        this.scene.add(this.sunLight);
 
-            // Generazione mondo
-            for (let x = -10; x < 10; x++) {
-                for (let z = -10; z < 10; z++) {
-                    // Genera altezza con rumore
-                    const height = Math.floor(Math.sin(x * 0.5) * 3 + Math.cos(z * 0.5) * 3 + 5);
+        // Moon
+        this.moonLight = new THREE.DirectionalLight(0x4444ff, 0.25);
+        this.moonLight.position.set(-100, 100, -100);
+        this.scene.add(this.moonLight);
 
-                    // Strati del terreno
-                    for (let y = 0; y < height; y++) {
-                        const geometry = new THREE.BoxGeometry(1, 1, 1);
-                        let material;
+        // Point lights for torches and other light sources
+        this.pointLights = new Map();
+    }
 
-                        if (y === height - 1) {
-                            material = materials.grass;
-                        } else if (y > height - 4) {
-                            material = materials.dirt;
-                        } else {
-                            material = materials.stone;
-                        }
+    // Skybox setup
+    setupSkybox() {
+        const loader = new THREE.CubeTextureLoader();
+        const textureUrls = [
+            'texture/skybox/px.jpg', 'texture/skybox/nx.jpg',
+            'texture/skybox/py.jpg', 'texture/skybox/ny.jpg',
+            'texture/skybox/pz.jpg', 'texture/skybox/nz.jpg'
+        ];
+        
+        this.skybox = loader.load(textureUrls);
+        this.scene.background = this.skybox;
+    }
 
-                        const block = new THREE.Mesh(geometry, material);
-                        block.position.set(x, y, z);
-                        block.blockType = y === height - 1 ? 'grass' : (y > height - 4 ? 'dirt' : 'stone');
-                        
-                        this.scene.add(block);
-                        this.blocks.push(block);
-                    }
-                }
+    // Enhanced world generation
+    generateWorld() {
+        const noise = new SimplexNoise();
+        
+        for (let chunkX = -this.config.renderDistance; chunkX < this.config.renderDistance; chunkX++) {
+            for (let chunkZ = -this.config.renderDistance; chunkZ < this.config.renderDistance; chunkZ++) {
+                this.generateChunk(chunkX, chunkZ, noise);
             }
-
-            // Generazione alberi
-            this.generateTrees();
-        }
-
-        generateTrees() {
-            const treeMaterials = {
-                trunk: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-                leaves: new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 })
-            };
-
-            // Genera 10 alberi
-            for (let i = 0; i < 10; i++) {
-                const x = Math.floor(Math.random() * 20 - 10);
-                const z = Math.floor(Math.random() * 20 - 10);
-
-                // Trova altezza del terreno
-                const groundBlock = this.blocks.find(b => b.position.x === x && b.position.z === z && b.blockType === 'grass');
-                if (!groundBlock) continue;
-
-                const treeHeight = 4;
-                const trunkGeometry = new THREE.BoxGeometry(0.5, treeHeight, 0.5);
-                const trunk = new THREE.Mesh(trunkGeometry, treeMaterials.trunk);
-                trunk.position.set(x, groundBlock.position.y + 1, z);
-                this.scene.add(trunk);
-
-                // Chioma
-                const leavesGeometry = new THREE.BoxGeometry(3, 2, 3);
-                const leaves = new THREE.Mesh(leavesGeometry, treeMaterials.leaves);
-                leaves.position.set(x, groundBlock.position.y + treeHeight + 1, z);
-                this.scene.add(leaves);
-            }
-        }
-
-        setupControls() {
-            // Movimento e rotazione
-            this.moveSpeed = 0.1;
-            this.keys = {};
-
-            window.addEventListener('keydown', (e) => {
-                this.keys[e.key] = true;
-                
-                // Azioni inventario
-                if (e.key >= '1' && e.key <= '3') {
-                    this.selectInventorySlot(parseInt(e.key) - 1);
-                }
-            });
-
-            window.addEventListener('keyup', (e) => {
-                this.keys[e.key] = false;
-            });
-
-            // Blocco movimento del mouse
-            this.renderer.domElement.addEventListener('click', () => {
-                this.renderer.domElement.requestPointerLock();
-            });
-
-            // Movimento telecamera
-            document.addEventListener('mousemove', (e) => {
-                if (document.pointerLockElement === this.renderer.domElement) {
-                    this.camera.rotation.y -= e.movementX * 0.002;
-                    this.camera.rotation.x -= e.movementY * 0.002;
-                    this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
-                }
-            });
-        }
-
-        setupInteractions() {
-            // Raycaster per interazioni
-            this.raycaster = new THREE.Raycaster();
-
-            // Click per distruggere/piazzare blocchi
-            this.renderer.domElement.addEventListener('mousedown', (e) => {
-                if (document.pointerLockElement !== this.renderer.domElement) return;
-
-                this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
-                const intersects = this.raycaster.intersectObjects(this.blocks);
-
-                if (e.button === 0 && intersects.length) {
-                    // Distruggi blocco
-                    const block = intersects[0].object;
-                    this.destroyBlock(block);
-                } else if (e.button === 2) {
-                    // Piazza blocco
-                    this.placeBlock();
-                }
-            });
-        }
-
-        destroyBlock(block) {
-            // Rimuovi blocco
-            this.scene.remove(block);
-            this.blocks = this.blocks.filter(b => b !== block);
-
-            // Aggiungi al inventario
-            this.player.inventory.push(block.blockType);
-            this.updateInventoryDisplay();
-        }
-
-        placeBlock() {
-            // Logica per piazzare blocco
-            if (!this.player.selectedSlot) return;
-
-            const blockType = this.player.selectedSlot;
-            const placementPoint = this.calculateBlockPlacementPoint();
-
-            if (placementPoint) {
-                const geometry = new THREE.BoxGeometry(1, 1, 1);
-                const material = new THREE.MeshStandardMaterial({ 
-                    color: {
-                        'grass': 0x00ff00,
-                        'dirt': 0x8B4513,
-                        'stone': 0x808080
-                    }[blockType]
-                });
-
-                const newBlock = new THREE.Mesh(geometry, material);
-                newBlock.position.copy(placementPoint);
-                newBlock.blockType = blockType;
-
-                this.scene.add(newBlock);
-                this.blocks.push(newBlock);
-
-                // Rimuovi dal inventario
-                const index = this.player.inventory.indexOf(blockType);
-                if (index > -1) {
-                    this.player.inventory.splice(index, 1);
-                }
-                this.updateInventoryDisplay();
-            }
-        }
-
-        calculateBlockPlacementPoint() {
-            this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
-            const intersects = this.raycaster.intersectObjects(this.blocks);
-
-            if (intersects.length) {
-                const point = intersects[0].point;
-                const normal = intersects[0].face.normal;
-                return new THREE.Vector3(
-                    Math.round(point.x + normal.x * 0.5),
-                    Math.round(point.y + normal.y * 0.5),
-                    Math.round(point.z + normal.z * 0.5)
-                );
-            }
-            return null;
-        }
-
-        selectInventorySlot(index) {
-            const slots = document.querySelectorAll('.inventory-slot');
-            slots.forEach(slot => slot.style.border = '2px solid white');
-            slots[index].style.border = '2px solid yellow';
-
-            this.player.selectedSlot = slots[index].dataset.item;
-        }
-
-        updateInventoryDisplay() {
-            const slots = document.querySelectorAll('.inventory-slot');
-            slots.forEach(slot => {
-                const item = slot.dataset.item;
-                const count = this.player.inventory.filter(i => i === item).length;
-                slot.textContent = `${slot.dataset.item} (${count})`;
-            });
-        }
-
-        updateMovement() {
-            // Movimento
-            const moveDirection = new THREE.Vector3();
-            const cameraDirection = new THREE.Vector3();
-            this.camera.getWorldDirection(cameraDirection);
-            cameraDirection.y = 0;
-            cameraDirection.normalize();
-
-            const rightVector = new THREE.Vector3().crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
-
-            if (this.keys['w']) moveDirection.add(cameraDirection);
-            if (this.keys['s']) moveDirection.sub(cameraDirection);
-            if (this.keys['a']) moveDirection.sub(rightVector);
-            if (this.keys['d']) moveDirection.add(rightVector);
-
-            if (moveDirection.length() > 0) {
-                moveDirection.normalize().multiplyScalar(this.moveSpeed);
-                this.camera.position.add(moveDirection);
-            }
-        }
-
-        update() {
-            this.updateMovement();
-            this.renderer.render(this.scene, this.camera);
-        }
-
-        animate() {
-            requestAnimationFrame(() => this.animate());
-            this.update();
-        }
-
-        start() {
-            this.animate();
         }
     }
 
-    // Avvio gioco
-    const game = new MinecraftClone();
-    game.start();
-    </script>
+    generateChunk(chunkX, chunkZ, noise) {
+        const chunk = new Chunk(chunkX, chunkZ, this.config.chunkSize);
+        
+        for (let x = 0; x < this.config.chunkSize; x++) {
+            for (let z = 0; z < this.config.chunkSize; z++) {
+                const worldX = chunkX * this.config.chunkSize + x;
+                const worldZ = chunkZ * this.config.chunkSize + z;
+                
+                // Generate terrain height using multiple noise layers
+                const height = this.calculateTerrainHeight(worldX, worldZ, noise);
+                
+                // Generate different biomes
+                const biome = this.getBiome(worldX, worldZ, noise);
+                
+                // Generate terrain layers
+                this.generateTerrainLayers(chunk, x, z, height, biome);
+            }
+        }
+
+        // Add structures
+        this.generateStructures(chunk, noise);
+        
+        // Add to chunks map
+        this.chunks.set(`${chunkX},${chunkZ}`, chunk);
+    }
+
+    calculateTerrainHeight(x, z, noise) {
+        // Base terrain
+        let height = noise.noise2D(x * 0.01, z * 0.01) * 20;
+        
+        // Mountains
+        height += noise.noise2D(x * 0.05, z * 0.05) * 10;
+        
+        // Hills
+        height += noise.noise2D(x * 0.02, z * 0.02) * 5;
+        
+        return Math.floor(height + 50);
+    }
+
+    getBiome(x, z, noise) {
+        const temperature = noise.noise2D(x * 0.02, z * 0.02);
+        const moisture = noise.noise2D(x * 0.03, z * 0.03);
+        
+        if (temperature < -0.5) return 'snow';
+        if (temperature > 0.5 && moisture < -0.3) return 'desert';
+        if (moisture > 0.3) return 'jungle';
+        return 'plains';
+    }
+
+    generateTerrainLayers(chunk, x, z, height, biome) {
+        const worldY = height;
+        
+        // Add blocks based on biome
+        for (let y = 0; y < worldY; y++) {
+            let blockType;
+            
+            if (y === worldY - 1) {
+                blockType = this.getBiomeTopBlock(biome);
+            } else if (y > worldY - 4) {
+                blockType = 'dirt';
+            } else {
+                blockType = 'stone';
+            }
+            
+            chunk.setBlock(x, y, z, blockType);
+        }
+    }
+
+    getBiomeTopBlock(biome) {
+        switch(biome) {
+            case 'snow': return 'snow';
+            case 'desert': return 'sand';
+            case 'jungle': return 'grass';
+            default: return 'grass';
+        }
+    }
+
+    generateStructures(chunk, noise) {
+        // Trees
+        this.generateTrees(chunk, noise);
+        
+        // Caves
+        this.generateCaves(chunk, noise);
+        
+        // Ores
+        this.generateOres(chunk);
+        
+        // Structures (houses, temples, etc.)
+        this.generateBuildings(chunk, noise);
+    }
+
+    // Physics system
+    updatePhysics() {
+        // Update player physics
+        this.updatePlayerPhysics();
+        
+        // Update entity physics
+        this.entities.forEach(entity => this.updateEntityPhysics(entity));
+        
+        // Update fluid physics
+        this.updateFluidPhysics();
+    }
+
+    updatePlayerPhysics() {
+        if (!this.player.onGround) {
+            this.player.velocity.y += this.config.gravity * 0.016; // deltaTime = 1/60 ≈ 0.016
+        }
+
+        // Apply velocity
+        this.camera.position.add(this.player.velocity);
+        
+        // Check collisions
+        this.handleCollisions();
+    }
+
+    handleCollisions() {
+        const playerPosition = this.camera.position.clone();
+        const boundingBox = new THREE.Box3();
+        boundingBox.setFromCenterAndSize(
+            playerPosition,
+            new THREE.Vector3(0.6, 1.8, 0.6)
+        );
+
+        // Check collision with blocks
+        this.blocks.forEach(block => {
+            const blockBox = new THREE.Box3();
+            blockBox.setFromObject(block);
+            
+            if (boundingBox.intersectsBox(blockBox)) {
+                this.resolveCollision(blockBox);
+            }
+        });
+    }
+
+    resolveCollision(blockBox) {
+        const playerPosition = this.camera.position;
+        const penetration = new THREE.Vector3();
+        
+        // Calculate penetration depth
+        penetration.copy(playerPosition).sub(blockBox.getCenter(new THREE.Vector3()));
+        
+        // Resolve collision
+        if (Math.abs(penetration.y) < Math.abs(penetration.x) && 
+            Math.abs(penetration.y) < Math.abs(penetration.z)) {
+            // Vertical collision
+            this.player.velocity.y = 0;
+            this.player.onGround = penetration.y > 0;
+            playerPosition.y += penetration.y;
+        } else if (Math.abs(penetration.x) < Math.abs(penetration.z)) {
+            // X-axis collision
+            this.player.velocity.x = 0;
+            playerPosition.x += penetration.x;
+        } else {
+            // Z-axis collision
+            this.player.velocity.z = 0;
+            playerPosition.z += penetration.z;
+        }
+    }
+
+    // Combat system
+    initializeCombat() {
+        this.weapons = {
+            sword: { damage: 5, range: 2 },
+            axe: { damage: 3, range: 2 },
+            bow: { damage: 4, range: 20 }
+        };
+        
+        this.mobs.types = {
+            zombie: { health: 20, damage: 3, speed: 0.5 },
+            skeleton: { health: 15, damage: 2, speed: 0.7 },
+            spider: { health: 12, damage: 2, speed: 0.8 }
+        };
+    }
+
+    attack(target) {
+        const weapon = this.player.selectedSlot;
+        if (!weapon || !this.weapons[weapon]) return;
+        
+        const weaponData = this.weapons[weapon];
+        const distance = this.camera.position.distanceTo(target.position);
+        
+        if (distance <= weaponData.range) {
+            target.health -= weaponData.damage;
+            if (target.health <= 0) {
+                this.killMob(target);
+            }
+        }
+    }
+
+    // Crafting system
+    initializeCrafting() {
+        this.recipes = {
+            wooden_planks: {
+                ingredients: [['wood', 1]],
+                result: { item: 'wooden_planks', count: 4 }
+            },
+            stick: {
+                ingredients: [['wooden_planks', 2]],
+                result: { item: 'stick', count: 4 }
+            },
+            wooden_pickaxe: {
+                ingredients: [
+                    ['wooden_planks', 3],
+                    ['stick', 2]
+                ],
+                result: { item: 'wooden_pickaxe', count: 1 }
+            }
+            // Add more recipes...
+        };
+    }
+
+    craftItem(recipe) {
+        const recipeData = this.recipes[recipe];
+        if (!recipeData) return false;
+        
+        // Check if player has ingredients
+        const hasIngredients = recipeData.ingredients.every(([item, count]) => 
+            this.player.inventory.filter(i => i === item).length >= count
+        );
+        
+        if (hasIngredients) {
+            // Remove ingredients
+            recipeData.ingredients.forEach(([item, count]) => {
+                for (let i = 0; i < count; i++) {
+                    const index = this.player.inventory.indexOf(item);
+                    this.player.inventory.splice(index, 1);
+                }
+            });
+            
+            // Add crafted item
+            for (let i = 0; i < recipeData.result.count; i++) {
+                this.player.inventory.push(recipeData.result.item);
+            }
+            
+            this.updateInventoryDisplay();
+            return true;
+        }
+        
+        return false;
+    }
+
+    // Weather system
+    updateWeather() {
+        const time = Date.now() * 0.001; // Convert to seconds
+        
+        // Update sky color based on time of day
+        const dayProgress = (time % this.config.dayLength) / this.config.dayLength;
+        this.updateSkyColor(dayProgress);
+        
+        // Update weather effects
+        if (this.gameState.weather !== 'clear') {
+            this.updateWeatherEffects();
+        }
+    }
+
+    updateSkyColor(dayProgress) {
+        const colors = {
+            night: new THREE.Color(0x001133),
+            dawn: new THREE.Color(0xff9999),
+            day: new THREE.Color(0x87CEEB),
+            dusk: new THREE.Color(0xff9966)
+        };
+        
+        let skyColor;
+        if (dayProgress < 0.25) { // Night to dawn
+            skyColor = colors.night.lerp(colors.dawn, dayProgress * 4);
+        } else if (dayProgress < 0.5) { // Dawn to day
+            skyColor = colors.dawn.lerp(colors.day, (dayProgress - 0.25) * 4);
+        } else if (dayProgress < 0.75) { // Day to dusk
+            skyColor = colors.day.lerp(colors.dusk, (dayProgress - 0.5) * 4);
+        } else { // Dusk to night
+            skyColor = colors.dusk.lerp(colors.night, (dayProgress - 0.75) * 4);
+        }
+        
+        this.scene.background = skyColor;
+    }
+
+    updateWeatherEffects() {
+        switch(this.gameState.weather) {
+            case 'rain':
+                this.updateRain();
+                break;
+            case 'snow':
+                this.updateSnow();
+                break;
+            case 'storm':
+                this.updateStorm();
+                break;
+        }
+    }
+
+    // Save system
+    saveGame() {
+        const saveData = {
+            player: {
+                position: this.camera.position.toArray(),
+                rotation: this.camera.rotation.toArray(),
+                inventory: this.player.inventory,
+                health: this.player.health,
+                hunger: this.player.hunger
+            },
+            gameState: this.gameState,
+            world: this.serializeWorld()
+        };
+        
+        localStorage.setItem('minecraft_save', JSON.stringify(saveData));
+        this.showSaveIndicator();
+    }
+
+    loadGame() {
+        const saveData = localStorage.getItem('minecraft_save');
+        if (saveData) {
+            const data = JSON.parse(saveData);
+            
+            // Restore player state
+            this.camera.position.fromArray(data.player.position);
+            this.camera.rotation.fromArray(data.player.rotation);
+            this.player.inventory = data.player.inventory;
+            this.player.health = data.player.health;
+            this.player.hunger = data.player.hunger;
+            
+            // Restore game state
+            this.gameState = data.gameState;
+            
+            // Restore world
+            this.deserializeWorld(data.world);
+            
+            this.updateInventoryDisplay();
+        }
+    }
+
+    // Main update loop
+    update() {
+        // Update game systems
+        this.updatePhysics();
+        this.updateWeather();
+        this.systems.mobs.update();
+        this.systems.multiplayer.update();
+        
+        // Update player state
+        this.updatePlayerState();
+        
+        // Auto-save every 5 minutes
+        if (Date.now() - this.gameState.lastSave > 300000) {
+            this.saveGame();
+            this.gameState.lastSave = Date.now();
+        }
+        
+        // Render
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    updatePlayerState() {
+        // Update hunger
+        if (this.player.isSprinting) {
+            this.player.hunger = Math.max(0, this.player.hunger - 0.01);
+        }
+        
+        // Health regeneration
+        if (this.player.hunger > 80 && this.player.health < this.config.maxHealth) {
+            this.player.health = Math.min(this.config.maxHealth, this.player.health + 0.1);
+        }
+        
+        // Update UI
+        this.updateHealthBar();
+        this.updateHungerBar();
+    }
+
+    // Start game
+    start() {
+        this.generateWorld();
+        this.animate();
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        this.update();
+    }
+}
+
+// Initialize game systems
+class PhysicsSystem {
+    constructor(game) {
+        this.game = game;
+        // Physics system implementation
+    }
+}
+
+class WeatherSystem {
+    constructor(game) {
+        this.game = game;
+        // Weather system implementation
+    }
+}
+
+class MobSystem {
+    constructor(game) {
+        this.game = game;
+        // Mob system implementation
+    }
+}
+
+class CraftingSystem {
+    constructor(game) {
+        this.game = game;
+        // Crafting system implementation
+    }
+}
+
+class MultiplayerSystem {
+    constructor(game) {
+        this.game = game;
+        // Multiplayer system implementation
+    }
+}
+
+class SoundSystem {
+    constructor(game) {
+        this.game = game;
+        // Sound system implementation
+    }
+}
+
+class Chunk {
+    constructor(x, z, size) {
+        this.x = x;
+        this.z = z;
+        this.size = size;
+        this.blocks = new Map();
+    }
+
+    setBlock(x, y, z, type) {
+        this.blocks.set(`${x},${y},${z}`, type);
+    }
+
+    getBlock(x, y, z) {
+        return this.blocks.get(`${x},${y},${z}`);
+    }
+}
+
+// Start the game
+const game = new MinecraftClone();
+game.start();
+</script>
 </body>
 </html>
