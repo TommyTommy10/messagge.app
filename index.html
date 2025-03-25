@@ -2,331 +2,124 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Advanced Survival Craft World</title>
+    <title>Minecraft Test</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            font-family: Arial, sans-serif;
-        }
-        #crosshair {
+        body { margin: 0; overflow: hidden; }
+        #debugInfo {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 20px;
-            height: 20px;
-            border: 2px solid white;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 1000;
-        }
-        #inventory {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: monospace;
             background: rgba(0,0,0,0.5);
             padding: 10px;
-            border-radius: 10px;
-        }
-        .inventory-slot {
-            width: 50px;
-            height: 50px;
-            border: 2px solid white;
-            margin: 0 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            background-size: cover;
-            image-rendering: pixelated;
-        }
-        #health-bar {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            width: 200px;
-            height: 20px;
-            background: red;
-            border: 2px solid white;
-            border-radius: 5px;
-        }
-        #hunger-bar {
-            position: fixed;
-            top: 45px;
-            left: 20px;
-            width: 200px;
-            height: 20px;
-            background: #8B4513;
-            border: 2px solid white;
-            border-radius: 5px;
-        }
-        #crafting-menu {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-        }
-        #weather-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            color: white;
-            font-size: 24px;
-        }
-        #day-night-cycle {
-            position: fixed;
-            top: 50px;
-            right: 20px;
-            color: white;
-        }
-        #save-indicator {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            color: white;
-            display: none;
-        }
-        .mob {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background: red;
-            border-radius: 50%;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
-    <div id="crosshair"></div>
-    <div id="health-bar"></div>
-    <div id="hunger-bar"></div>
-    <div id="weather-indicator">☀️</div>
-    <div id="day-night-cycle">Day 1 - 06:00</div>
-    <div id="save-indicator">Game Saved!</div>
-    
-    <div id="inventory">
-        <div class="inventory-slot" data-item="wood">🌳</div>
-        <div class="inventory-slot" data-item="stone">🪨</div>
-        <div class="inventory-slot" data-item="axe">🪓</div>
-        <div class="inventory-slot" data-item="sword">⚔️</div>
-        <div class="inventory-slot" data-item="pickaxe">⛏️</div>
-        <div class="inventory-slot" data-item="bucket">🪣</div>
-    </div>
+    <div id="debugInfo">Caricamento...</div>
 
-    <div id="crafting-menu">
-        <h2>Crafting</h2>
-        <div id="crafting-grid"></div>
-        <div id="crafting-result"></div>
-        <button onclick="game.craftItem()">Craft</button>
-    </div>
-
-    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/simplex-noise@2.4.0/simplex-noise.js"></script>
-    <!-- Game Code -->
     <script>
-class MinecraftClone {
-    constructor() {
-        // Configurazione scena
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x87CEEB); // Colore del cielo
+    class MinecraftTest {
+        constructor() {
+            this.debugElement = document.getElementById('debugInfo');
+            this.debug("Inizializzazione...");
 
-        // Configurazione camera
-        this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        this.camera.position.set(0, 15, 30); // Posiziona la camera più in alto e più lontana
-        this.camera.lookAt(0, 0, 0);
-
-        // Renderer setup
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setClearColor(0x87CEEB, 1);
-        document.body.appendChild(this.renderer.domElement);
-
-        // Inizializzazione array blocchi
-        this.blocks = [];
-
-        // Setup base
-        this.setupLighting();
-        this.generateWorld();
-        this.setupControls();
-        this.setupInteractions();
-    }
-
-    setupLighting() {
-        // Luce ambientale
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        this.scene.add(ambientLight);
-
-        // Luce direzionale (sole)
-        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        sunLight.position.set(50, 50, 50);
-        sunLight.castShadow = true;
-        this.scene.add(sunLight);
-    }
-
-    generateWorld() {
-        // Generazione di un mondo base più piccolo per test
-        const worldSize = 20; // Dimensione del mondo ridotta per il test
-        
-        // Materiali dei blocchi
-        const materials = {
-            grass: new THREE.MeshStandardMaterial({ color: 0x55AA55 }),
-            dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-            stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
-        };
-
-        // Geometria del blocco
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-
-        // Genera il terreno
-        for (let x = -worldSize/2; x < worldSize/2; x++) {
-            for (let z = -worldSize/2; z < worldSize/2; z++) {
-                // Genera un'altezza semplice per il terreno
-                const height = Math.floor(
-                    Math.sin(x * 0.3) * 2 + 
-                    Math.cos(z * 0.3) * 2 + 
-                    5
-                );
-
-                // Crea i blocchi
-                for (let y = 0; y < height; y++) {
-                    let material;
-                    if (y === height - 1) {
-                        material = materials.grass;
-                    } else if (y > height - 4) {
-                        material = materials.dirt;
-                    } else {
-                        material = materials.stone;
-                    }
-
-                    const block = new THREE.Mesh(geometry, material);
-                    block.position.set(x, y, z);
-                    this.scene.add(block);
-                    this.blocks.push(block);
+            try {
+                // Test Three.js
+                if (!THREE) {
+                    throw new Error("Three.js non caricato");
                 }
+                this.debug("Three.js caricato correttamente");
+
+                // Scena base
+                this.scene = new THREE.Scene();
+                this.debug("Scena creata");
+
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(
+                    75,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                this.camera.position.z = 5;
+                this.debug("Camera configurata");
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(this.renderer.domElement);
+                this.debug("Renderer creato");
+
+                // Cubo test
+                const geometry = new THREE.BoxGeometry();
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                this.cube = new THREE.Mesh(geometry, material);
+                this.scene.add(this.cube);
+                this.debug("Cubo test aggiunto");
+
+                // Luce ambientale
+                const light = new THREE.AmbientLight(0x404040);
+                this.scene.add(light);
+                this.debug("Luce aggiunta");
+
+                // Eventi resize
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+
+                this.debug("Inizializzazione completata");
+            } catch (error) {
+                this.debug("ERRORE: " + error.message);
+                console.error(error);
             }
         }
 
-        // Aggiungi alcuni alberi
-        this.generateTrees();
-    }
-
-    generateTrees() {
-        const treeMaterial = new THREE.MeshStandardMaterial({ color: 0x4A2500 });
-        const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x1B4D00 });
-
-        // Genera alcuni alberi casuali
-        for (let i = 0; i < 5; i++) {
-            const x = Math.floor(Math.random() * 10 - 5);
-            const z = Math.floor(Math.random() * 10 - 5);
-            
-            // Trova l'altezza del terreno in questo punto
-            const groundBlock = this.blocks.find(
-                block => block.position.x === x && 
-                        block.position.z === z && 
-                        block.material.color.getHex() === 0x55AA55
-            );
-
-            if (groundBlock) {
-                const y = groundBlock.position.y + 1;
-                
-                // Crea il tronco
-                const trunkGeometry = new THREE.BoxGeometry(0.6, 4, 0.6);
-                const trunk = new THREE.Mesh(trunkGeometry, treeMaterial);
-                trunk.position.set(x, y + 2, z);
-                this.scene.add(trunk);
-                this.blocks.push(trunk);
-
-                // Crea le foglie
-                const leavesGeometry = new THREE.BoxGeometry(3, 3, 3);
-                const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
-                leaves.position.set(x, y + 4.5, z);
-                this.scene.add(leaves);
-                this.blocks.push(leaves);
+        debug(message) {
+            if (this.debugElement) {
+                this.debugElement.innerHTML += "<br>" + message;
+                console.log(message);
             }
+        }
+
+        animate() {
+            requestAnimationFrame(() => this.animate());
+
+            try {
+                if (this.cube) {
+                    this.cube.rotation.x += 0.01;
+                    this.cube.rotation.y += 0.01;
+                }
+
+                if (this.renderer && this.scene && this.camera) {
+                    this.renderer.render(this.scene, this.camera);
+                }
+            } catch (error) {
+                this.debug("ERRORE ANIMAZIONE: " + error.message);
+            }
+        }
+
+        start() {
+            this.debug("Avvio animazione");
+            this.animate();
         }
     }
 
-    setupControls() {
-        this.moveSpeed = 0.2;
-        this.keys = {};
-
-        // Gestione input tastiera
-        window.addEventListener('keydown', (e) => {
-            this.keys[e.key.toLowerCase()] = true;
-        });
-
-        window.addEventListener('keyup', (e) => {
-            this.keys[e.key.toLowerCase()] = false;
-        });
-
-        // Mouse look
-        document.addEventListener('mousemove', (e) => {
-            if (document.pointerLockElement === this.renderer.domElement) {
-                this.camera.rotation.y -= e.movementX * 0.002;
-                this.camera.rotation.x -= e.movementY * 0.002;
-                
-                // Limita la rotazione verticale
-                this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
-            }
-        });
-
-        // Pointer lock
-        this.renderer.domElement.addEventListener('click', () => {
-            this.renderer.domElement.requestPointerLock();
-        });
-    }
-
-    updateMovement() {
-        if (!this.keys) return;
-
-        const moveSpeed = this.moveSpeed;
-        const direction = new THREE.Vector3();
-        const rotation = this.camera.rotation.clone();
-
-        // Calcola la direzione del movimento
-        if (this.keys['w']) direction.z -= Math.cos(rotation.y);
-        if (this.keys['s']) direction.z += Math.cos(rotation.y);
-        if (this.keys['a']) direction.x -= Math.cos(rotation.y - Math.PI/2);
-        if (this.keys['d']) direction.x += Math.cos(rotation.y - Math.PI/2);
-        
-        // Normalizza e applica il movimento
-        if (direction.length() > 0) {
-            direction.normalize();
-            this.camera.position.x += direction.x * moveSpeed;
-            this.camera.position.z += direction.z * moveSpeed;
+    // Avvio con gestione errori
+    window.onload = () => {
+        try {
+            const game = new MinecraftTest();
+            game.start();
+        } catch (error) {
+            console.error("Errore fatale:", error);
+            document.getElementById('debugInfo').innerHTML += "<br>ERRORE FATALE: " + error.message;
         }
-    }
-
-    update() {
-        this.updateMovement();
-    }
-
-    animate() {
-        requestAnimationFrame(() => this.animate());
-        this.update();
-        this.renderer.render(this.scene, this.camera);
-    }
-
-    start() {
-        this.animate();
-    }
-}
-
-// Avvia il gioco
-try {
-    const game = new MinecraftClone();
-    game.start();
-    console.log("Gioco avviato correttamente");
-} catch (error) {
-    console.error("Errore durante l'avvio del gioco:", error);
-}
-</script>
+    };
+    </script>
 </body>
 </html>
