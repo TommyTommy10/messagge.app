@@ -2,176 +2,349 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messagge.app</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Survival Craft World</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: Arial, sans-serif;
+        }
+        #crosshair {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid white;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+        }
+        #inventory {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .inventory-slot {
+            width: 50px;
+            height: 50px;
+            border: 2px solid white;
+            margin: 0 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        #health-bar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 200px;
+            height: 20px;
+            background: red;
+        }
+    </style>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="brand">
-                <h1>messagge.app</h1>
-            </div>
-            
-            <div class="user-profile">
-                <div class="avatar">
-                    <img src="/api/placeholder/80/80" alt="Profile Image">
-                    <span class="status-indicator online"></span>
-                </div>
-                <div class="user-info">
-                    <h3 class="username">Il tuo nome</h3>
-                    <p class="status">Online</p>
-                </div>
-            </div>
-            
-            <div class="search-container">
-                <div class="search-input">
-                    <i class="fas fa-search"></i>
-                    <input type="text" placeholder="Cerca conversazioni...">
-                </div>
-            </div>
-            
-            <nav class="conversations">
-                <h2>Conversazioni</h2>
-                <ul class="conversation-list">
-                    <!-- Conversation items will be dynamically added here -->
-                </ul>
-            </nav>
-            
-            <div class="sidebar-footer">
-                <button class="new-chat-btn"><i class="fas fa-plus"></i> Nuova chat</button>
-                <div class="settings-btn">
-                    <i class="fas fa-cog"></i>
-                </div>
-            </div>
-        </aside>
-        
-        <!-- Main chat area -->
-        <main class="chat-container">
-            <header class="chat-header">
-                <div class="current-chat-info">
-                    <div class="chat-avatar">
-                        <img src="/api/placeholder/50/50" alt="Current Chat">
-                        <span class="status-indicator online"></span>
-                    </div>
-                    <div>
-                        <h2 class="chat-name">Nome contatto</h2>
-                        <p class="chat-status">Online</p>
-                    </div>
-                </div>
-                <div class="chat-actions">
-                    <button class="action-btn"><i class="fas fa-phone"></i></button>
-                    <button class="action-btn"><i class="fas fa-video"></i></button>
-                    <button class="action-btn"><i class="fas fa-info-circle"></i></button>
-                </div>
-            </header>
-            
-            <div class="messages-container">
-                <div class="date-separator">
-                    <span>Oggi</span>
-                </div>
-                <!-- Messages will be dynamically added here -->
-            </div>
-            
-            <div class="message-composer">
-                <button class="emoji-btn"><i class="far fa-smile"></i></button>
-                <button class="attachment-btn"><i class="fas fa-paperclip"></i></button>
-                <div class="message-input">
-                    <input type="text" placeholder="Scrivi un messaggio...">
-                </div>
-                <button class="voice-btn"><i class="fas fa-microphone"></i></button>
-                <button class="send-btn"><i class="fas fa-paper-plane"></i></button>
-            </div>
-        </main>
-        
-        <!-- Right sidebar / Info panel (hidden by default on mobile) -->
-        <aside class="info-panel">
-            <header class="info-header">
-                <h2>Informazioni</h2>
-                <button class="close-info-btn"><i class="fas fa-times"></i></button>
-            </header>
-            
-            <div class="contact-profile">
-                <div class="contact-avatar">
-                    <img src="/api/placeholder/120/120" alt="Contact Profile">
-                </div>
-                <h3 class="contact-name">Nome contatto</h3>
-                <p class="contact-status">Online</p>
-            </div>
-            
-            <div class="info-section">
-                <h4>Contatto</h4>
-                <div class="info-item">
-                    <i class="fas fa-envelope"></i>
-                    <span>email@esempio.com</span>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-phone"></i>
-                    <span>+39 123 456 7890</span>
-                </div>
-            </div>
-            
-            <div class="info-section">
-                <h4>Media condivisi</h4>
-                <div class="media-grid">
-                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
-                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
-                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
-                    <div class="media-item"><img src="/api/placeholder/80/80" alt="Media"></div>
-                </div>
-                <button class="view-all-btn">Vedi tutti</button>
-            </div>
-            
-            <div class="info-section">
-                <h4>Azioni</h4>
-                <button class="action-btn danger"><i class="fas fa-ban"></i> Blocca contatto</button>
-                <button class="action-btn danger"><i class="fas fa-trash"></i> Elimina chat</button>
-            </div>
-        </aside>
+    <div id="crosshair"></div>
+    <div id="health-bar"></div>
+    <div id="inventory">
+        <div class="inventory-slot" data-item="wood">🌳</div>
+        <div class="inventory-slot" data-item="stone">🪨</div>
+        <div class="inventory-slot" data-item="axe">🪓</div>
     </div>
-    
-    <!-- Templates for dynamic content -->
-    <template id="conversation-item-template">
-        <li class="conversation-item">
-            <div class="conversation-avatar">
-                <img src="" alt="Contact">
-                <span class="status-indicator"></span>
-            </div>
-            <div class="conversation-info">
-                <div class="conversation-header">
-                    <h3 class="conversation-name"></h3>
-                    <span class="conversation-time"></span>
-                </div>
-                <p class="conversation-preview"></p>
-            </div>
-            <div class="conversation-indicators">
-                <span class="unread-badge"></span>
-            </div>
-        </li>
-    </template>
-    
-    <template id="message-template">
-        <div class="message">
-            <div class="message-avatar">
-                <img src="" alt="Avatar">
-            </div>
-            <div class="message-content">
-                <div class="message-bubble">
-                    <p class="message-text"></p>
-                </div>
-                <div class="message-info">
-                    <span class="message-time"></span>
-                    <span class="message-status"></span>
-                </div>
-            </div>
-        </div>
-    </template>
-    
-    <script src="app.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+    class MinecraftClone {
+        constructor() {
+            // Configurazione scena
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x87CEEB);
+
+            // Telecamera
+            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(0, 10, 20);
+            this.camera.lookAt(0, 0, 0);
+
+            // Renderer
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(this.renderer.domElement);
+
+            // Stato gioco
+            this.blocks = [];
+            this.player = {
+                health: 100,
+                inventory: [],
+                selectedSlot: null
+            };
+
+            // Inizializzazione
+            this.setupLighting();
+            this.generateWorld();
+            this.setupControls();
+            this.setupInteractions();
+        }
+
+        setupLighting() {
+            // Illuminazione
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            this.scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(50, 50, 50);
+            this.scene.add(sunLight);
+        }
+
+        generateWorld() {
+            // Texture loader
+            const textureLoader = new THREE.TextureLoader();
+
+            // Materiali
+            const materials = {
+                grass: new THREE.MeshStandardMaterial({ color: 0x00ff00 }),
+                dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
+                stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
+            };
+
+            // Generazione mondo
+            for (let x = -10; x < 10; x++) {
+                for (let z = -10; z < 10; z++) {
+                    // Genera altezza con rumore
+                    const height = Math.floor(Math.sin(x * 0.5) * 3 + Math.cos(z * 0.5) * 3 + 5);
+
+                    // Strati del terreno
+                    for (let y = 0; y < height; y++) {
+                        const geometry = new THREE.BoxGeometry(1, 1, 1);
+                        let material;
+
+                        if (y === height - 1) {
+                            material = materials.grass;
+                        } else if (y > height - 4) {
+                            material = materials.dirt;
+                        } else {
+                            material = materials.stone;
+                        }
+
+                        const block = new THREE.Mesh(geometry, material);
+                        block.position.set(x, y, z);
+                        block.blockType = y === height - 1 ? 'grass' : (y > height - 4 ? 'dirt' : 'stone');
+                        
+                        this.scene.add(block);
+                        this.blocks.push(block);
+                    }
+                }
+            }
+
+            // Generazione alberi
+            this.generateTrees();
+        }
+
+        generateTrees() {
+            const treeMaterials = {
+                trunk: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
+                leaves: new THREE.MeshStandardMaterial({ color: 0x00ff00, transparent: true, opacity: 0.8 })
+            };
+
+            // Genera 10 alberi
+            for (let i = 0; i < 10; i++) {
+                const x = Math.floor(Math.random() * 20 - 10);
+                const z = Math.floor(Math.random() * 20 - 10);
+
+                // Trova altezza del terreno
+                const groundBlock = this.blocks.find(b => b.position.x === x && b.position.z === z && b.blockType === 'grass');
+                if (!groundBlock) continue;
+
+                const treeHeight = 4;
+                const trunkGeometry = new THREE.BoxGeometry(0.5, treeHeight, 0.5);
+                const trunk = new THREE.Mesh(trunkGeometry, treeMaterials.trunk);
+                trunk.position.set(x, groundBlock.position.y + 1, z);
+                this.scene.add(trunk);
+
+                // Chioma
+                const leavesGeometry = new THREE.BoxGeometry(3, 2, 3);
+                const leaves = new THREE.Mesh(leavesGeometry, treeMaterials.leaves);
+                leaves.position.set(x, groundBlock.position.y + treeHeight + 1, z);
+                this.scene.add(leaves);
+            }
+        }
+
+        setupControls() {
+            // Movimento e rotazione
+            this.moveSpeed = 0.1;
+            this.keys = {};
+
+            window.addEventListener('keydown', (e) => {
+                this.keys[e.key] = true;
+                
+                // Azioni inventario
+                if (e.key >= '1' && e.key <= '3') {
+                    this.selectInventorySlot(parseInt(e.key) - 1);
+                }
+            });
+
+            window.addEventListener('keyup', (e) => {
+                this.keys[e.key] = false;
+            });
+
+            // Blocco movimento del mouse
+            this.renderer.domElement.addEventListener('click', () => {
+                this.renderer.domElement.requestPointerLock();
+            });
+
+            // Movimento telecamera
+            document.addEventListener('mousemove', (e) => {
+                if (document.pointerLockElement === this.renderer.domElement) {
+                    this.camera.rotation.y -= e.movementX * 0.002;
+                    this.camera.rotation.x -= e.movementY * 0.002;
+                    this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
+                }
+            });
+        }
+
+        setupInteractions() {
+            // Raycaster per interazioni
+            this.raycaster = new THREE.Raycaster();
+
+            // Click per distruggere/piazzare blocchi
+            this.renderer.domElement.addEventListener('mousedown', (e) => {
+                if (document.pointerLockElement !== this.renderer.domElement) return;
+
+                this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+                const intersects = this.raycaster.intersectObjects(this.blocks);
+
+                if (e.button === 0 && intersects.length) {
+                    // Distruggi blocco
+                    const block = intersects[0].object;
+                    this.destroyBlock(block);
+                } else if (e.button === 2) {
+                    // Piazza blocco
+                    this.placeBlock();
+                }
+            });
+        }
+
+        destroyBlock(block) {
+            // Rimuovi blocco
+            this.scene.remove(block);
+            this.blocks = this.blocks.filter(b => b !== block);
+
+            // Aggiungi al inventario
+            this.player.inventory.push(block.blockType);
+            this.updateInventoryDisplay();
+        }
+
+        placeBlock() {
+            // Logica per piazzare blocco
+            if (!this.player.selectedSlot) return;
+
+            const blockType = this.player.selectedSlot;
+            const placementPoint = this.calculateBlockPlacementPoint();
+
+            if (placementPoint) {
+                const geometry = new THREE.BoxGeometry(1, 1, 1);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: {
+                        'grass': 0x00ff00,
+                        'dirt': 0x8B4513,
+                        'stone': 0x808080
+                    }[blockType]
+                });
+
+                const newBlock = new THREE.Mesh(geometry, material);
+                newBlock.position.copy(placementPoint);
+                newBlock.blockType = blockType;
+
+                this.scene.add(newBlock);
+                this.blocks.push(newBlock);
+
+                // Rimuovi dal inventario
+                const index = this.player.inventory.indexOf(blockType);
+                if (index > -1) {
+                    this.player.inventory.splice(index, 1);
+                }
+                this.updateInventoryDisplay();
+            }
+        }
+
+        calculateBlockPlacementPoint() {
+            this.raycaster.setFromCamera({ x: 0, y: 0 }, this.camera);
+            const intersects = this.raycaster.intersectObjects(this.blocks);
+
+            if (intersects.length) {
+                const point = intersects[0].point;
+                const normal = intersects[0].face.normal;
+                return new THREE.Vector3(
+                    Math.round(point.x + normal.x * 0.5),
+                    Math.round(point.y + normal.y * 0.5),
+                    Math.round(point.z + normal.z * 0.5)
+                );
+            }
+            return null;
+        }
+
+        selectInventorySlot(index) {
+            const slots = document.querySelectorAll('.inventory-slot');
+            slots.forEach(slot => slot.style.border = '2px solid white');
+            slots[index].style.border = '2px solid yellow';
+
+            this.player.selectedSlot = slots[index].dataset.item;
+        }
+
+        updateInventoryDisplay() {
+            const slots = document.querySelectorAll('.inventory-slot');
+            slots.forEach(slot => {
+                const item = slot.dataset.item;
+                const count = this.player.inventory.filter(i => i === item).length;
+                slot.textContent = `${slot.dataset.item} (${count})`;
+            });
+        }
+
+        updateMovement() {
+            // Movimento
+            const moveDirection = new THREE.Vector3();
+            const cameraDirection = new THREE.Vector3();
+            this.camera.getWorldDirection(cameraDirection);
+            cameraDirection.y = 0;
+            cameraDirection.normalize();
+
+            const rightVector = new THREE.Vector3().crossVectors(cameraDirection, new THREE.Vector3(0, 1, 0));
+
+            if (this.keys['w']) moveDirection.add(cameraDirection);
+            if (this.keys['s']) moveDirection.sub(cameraDirection);
+            if (this.keys['a']) moveDirection.sub(rightVector);
+            if (this.keys['d']) moveDirection.add(rightVector);
+
+            if (moveDirection.length() > 0) {
+                moveDirection.normalize().multiplyScalar(this.moveSpeed);
+                this.camera.position.add(moveDirection);
+            }
+        }
+
+        update() {
+            this.updateMovement();
+            this.renderer.render(this.scene, this.camera);
+        }
+
+        animate() {
+            requestAnimationFrame(() => this.animate());
+            this.update();
+        }
+
+        start() {
+            this.animate();
+        }
+    }
+
+    // Avvio gioco
+    const game = new MinecraftClone();
+    game.start();
+    </script>
 </body>
 </html>
