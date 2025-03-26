@@ -1186,6 +1186,138 @@ window.onload = () => {
         document.getElementById('debugInfo').innerHTML += "<br>ERRORE FATALE: " + error.message;
     }
 };
+        createBlock(x, y, z, material) {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const block = new THREE.Mesh(geometry, material);
+    block.position.set(x, y, z);
+    block.castShadow = true;
+    block.receiveShadow = true;
+    this.scene.add(block);
+    this.blocks.push(block);
+    return block;
+}
+
+setupInventoryUI() {
+    const hotbar = document.getElementById('hotbar');
+    hotbar.innerHTML = '';
+
+    for (let i = 0; i < this.inventory.hotbar.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inventorySlot';
+        if (i === this.inventory.selectedSlot) {
+            slot.classList.add('selected');
+        }
+        this.updateSlotUI(slot, this.inventory.hotbar[i]);
+        slot.addEventListener('click', () => this.selectInventorySlot(i));
+        hotbar.appendChild(slot);
+    }
+}
+
+updateHotbarUI() {
+    const hotbar = document.getElementById('hotbar');
+    Array.from(hotbar.children).forEach((slot, index) => {
+        this.updateSlotUI(slot, this.inventory.hotbar[index]);
+        slot.classList.toggle('selected', index === this.inventory.selectedSlot);
+    });
+}
+
+updateSlotUI(slot, item) {
+    if (item && item.type && item.count > 0) {
+        slot.innerHTML = `
+            <div class="blockPreview" style="background-color: ${this.getBlockColor(item.type)}">
+                <span class="blockCount">${item.count}</span>
+            </div>
+        `;
+    } else {
+        slot.innerHTML = '';
+    }
+}
+
+handleBlockBreak() {
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    
+    const intersects = raycaster.intersectObjects(this.blocks);
+    if (intersects.length > 0 && intersects[0].distance <= 5) {
+        const block = intersects[0].object;
+        
+        // Determina il tipo di blocco
+        let blockType;
+        for (const [type, material] of Object.entries(this.blockMaterials)) {
+            if (block.material === material) {
+                blockType = type;
+                break;
+            }
+        }
+
+        // Aggiungi all'inventario
+        if (blockType) {
+            this.addToInventory(blockType, 1);
+        }
+
+        // Rimuovi il blocco
+        this.scene.remove(block);
+        this.blocks = this.blocks.filter(b => b !== block);
+    }
+}
+
+handleBlockPlace() {
+    const selectedSlot = this.inventory.hotbar[this.inventory.selectedSlot];
+    if (!selectedSlot || !selectedSlot.type || selectedSlot.count <= 0) return;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+    
+    const intersects = raycaster.intersectObjects(this.blocks);
+    if (intersects.length > 0 && intersects[0].distance <= 5) {
+        const intersection = intersects[0];
+        const normal = intersection.face.normal;
+        const position = intersection.point.add(normal.multiplyScalar(0.5));
+
+        position.x = Math.round(position.x);
+        position.y = Math.round(position.y);
+        position.z = Math.round(position.z);
+
+        // Evita di piazzare blocchi dove c'è il giocatore
+        const playerPos = this.camera.position;
+        if (Math.abs(position.x - playerPos.x) < 1 &&
+            Math.abs(position.z - playerPos.z) < 1 &&
+            position.y >= playerPos.y &&
+            position.y <= playerPos.y + this.PLAYER_HEIGHT) {
+            return;
+        }
+
+        // Controlla se c'è già un blocco
+        const blockExists = this.blocks.some(block => 
+            block.position.x === position.x &&
+            block.position.y === position.y &&
+            block.position.z === position.z
+        );
+
+        if (!blockExists) {
+            const material = this.blockMaterials[selectedSlot.type];
+            if (material) {
+                this.createBlock(position.x, position.y, position.z, material);
+                selectedSlot.count--;
+                this.updateHotbarUI();
+            }
+        }
+    }
+}
+
+getBlockColor(type) {
+    const colors = {
+        'grass': '#55AA55',
+        'dirt': '#8B4513',
+        'stone': '#808080',
+        'wood': '#8B5A2B',
+        'leaves': '#2D5A27',
+        'glass': '#AAAAAA',
+        'workbench': '#8B4513',
+        'chest': '#A0522D'
+    };
+    return colors[type] || '#000000';
+}
 </script>
 </body>
 </html>
