@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <title>Minecraft Clone</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            font-family: 'Arial', sans-serif;
+        }
         #debugInfo {
             position: fixed;
             top: 10px;
@@ -38,12 +42,77 @@
             border-radius: 8px;
             z-index: 100;
         }
+        #craftingMenu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+            grid-template-columns: repeat(3, 50px);
+            gap: 4px;
+            z-index: 1500;
+        }
+        .craftingSlot {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .craftingResult {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid #888;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        .inventorySlot {
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+        }
+        .inventorySlot:hover {
+            border-color: #fff;
+        }
+        .inventorySlot.selected {
+            border-color: #fff;
+        }
+        .blockPreview {
+            width: 30px;
+            height: 30px;
+            position: relative;
+        }
+        .blockCount {
+            position: absolute;
+            bottom: -15px;
+            right: -15px;
+            color: white;
+            font-size: 12px;
+            text-shadow: 1px 1px 1px black;
+        }
     </style>
 </head>
 <body>
     <div id="debugInfo">Caricamento...</div>
     <div id="crosshair"></div>
     <div id="hotbar"></div>
+    <div id="craftingMenu"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -59,58 +128,155 @@
             this.debugElement = document.getElementById('debugInfo');
             this.debug("Inizializzazione...");
 
-            try {
-                // Inizializzazione base
-                this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x87CEEB);
-                this.debug("Scena creata");
+            // Costanti di gioco
+            this.PLAYER_HEIGHT = 1.8;
+            this.PLAYER_WIDTH = 0.6;
+            this.GRAVITY = 0.01;
+            this.JUMP_FORCE = 0.2;
+            this.COLLISION_SEGMENTS = 8; // Per una migliore rilevazione delle collisioni
 
-                this.inventory = {
-                    slots: [
-                        { type: 'grass', count: 64 },
-                        { type: 'dirt', count: 64 },
-                        { type: 'stone', count: 64 }
+            // Variabili di gioco
+            this.playerVelocity = new THREE.Vector3();
+            this.playerOnGround = false;
+            this.canJump = false;
+
+            // Crafting recipes
+            this.craftingRecipes = [
+                {
+                    input: [
+                        ['wood', 'wood', 'wood'],
+                        ['wood', null, 'wood'],
+                        ['wood', 'wood', 'wood']
                     ],
-                    selectedSlot: 0
-                };
+                    output: { type: 'chest', count: 1 }
+                },
+                {
+                    input: [
+                        ['wood', 'wood', null],
+                        ['wood', 'wood', null],
+                        [null, null, null]
+                    ],
+                    output: { type: 'workbench', count: 1 }
+                },
+                {
+                    input: [
+                        ['stone', 'stone', 'stone'],
+                        [null, 'wood', null],
+                        [null, 'wood', null]
+                    ],
+                    output: { type: 'pickaxe', count: 1 }
+                }
+            ];
 
-                // Camera
-                this.camera = new THREE.PerspectiveCamera(
-                    75,
-                    window.innerWidth / window.innerHeight,
-                    0.1,
-                    1000
-                );
-                this.camera.position.set(0, 5, 10);
-                this.camera.lookAt(0, 0, 0);
-                this.debug("Camera configurata");
-
-                // Renderer
-                this.renderer = new THREE.WebGLRenderer({ antialias: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.shadowMap.enabled = true;
-                document.body.appendChild(this.renderer.domElement);
-                this.debug("Renderer creato");
-
-                // Setup di base
-                this.setupLights();
-                this.blocks = [];
-                this.generateWorld();
-                this.setupControls();
-                this.setupInventoryUI();
-                
-                // Eventi resize
-                window.addEventListener('resize', () => {
-                    this.camera.aspect = window.innerWidth / window.innerHeight;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(window.innerWidth, window.innerHeight);
-                });
-
-                this.debug("Inizializzazione completata");
+            try {
+                this.initializeGame();
             } catch (error) {
                 this.debug("ERRORE: " + error.message);
                 console.error(error);
             }
+        }
+
+                initializeGame() {
+            // Scene setup
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x87CEEB);
+
+            // Camera setup
+            this.camera = new THREE.PerspectiveCamera(
+                75,
+                window.innerWidth / window.innerHeight,
+                0.1,
+                1000
+            );
+            this.camera.position.set(0, this.PLAYER_HEIGHT, 10);
+            this.camera.lookAt(0, this.PLAYER_HEIGHT, 0);
+
+            // Renderer setup
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.shadowMap.enabled = true;
+            document.body.appendChild(this.renderer.domElement);
+
+            // Materiali migliorati
+            this.blockMaterials = {
+                grass: new THREE.MeshStandardMaterial({ 
+                    color: 0x55AA55,
+                    roughness: 0.8,
+                    metalness: 0.2
+                }),
+                dirt: new THREE.MeshStandardMaterial({ 
+                    color: 0x8B4513,
+                    roughness: 0.9,
+                    metalness: 0.1
+                }),
+                stone: new THREE.MeshStandardMaterial({ 
+                    color: 0x808080,
+                    roughness: 0.7,
+                    metalness: 0.3
+                }),
+                wood: new THREE.MeshStandardMaterial({ 
+                    color: 0x8B5A2B,
+                    roughness: 0.8,
+                    metalness: 0.1
+                }),
+                leaves: new THREE.MeshStandardMaterial({ 
+                    color: 0x2D5A27,
+                    roughness: 0.8,
+                    metalness: 0.1,
+                    transparent: true,
+                    opacity: 0.9
+                }),
+                workbench: new THREE.MeshStandardMaterial({ 
+                    color: 0x8B4513,
+                    roughness: 0.8,
+                    metalness: 0.2
+                }),
+                chest: new THREE.MeshStandardMaterial({ 
+                    color: 0xA0522D,
+                    roughness: 0.7,
+                    metalness: 0.3
+                }),
+                glass: new THREE.MeshStandardMaterial({ 
+                    color: 0xAAAAAA,
+                    roughness: 0.2,
+                    metalness: 0.8,
+                    transparent: true,
+                    opacity: 0.5
+                })
+            };
+
+            // Inventory setup
+            this.inventory = {
+                hotbar: Array(9).fill().map(() => ({ type: null, count: 0 })),
+                items: Array(27).fill().map(() => ({ type: null, count: 0 })),
+                selectedSlot: 0,
+                craftingGrid: Array(9).fill().map(() => ({ type: null, count: 0 }))
+            };
+
+            // Add initial items
+            this.inventory.hotbar[0] = { type: 'grass', count: 64 };
+            this.inventory.hotbar[1] = { type: 'dirt', count: 64 };
+            this.inventory.hotbar[2] = { type: 'stone', count: 64 };
+            this.inventory.hotbar[3] = { type: 'wood', count: 64 };
+            this.inventory.hotbar[4] = { type: 'leaves', count: 64 };
+            this.inventory.hotbar[5] = { type: 'glass', count: 64 };
+
+            // Setup del gioco
+            this.setupLights();
+            this.blocks = [];
+            this.generateWorld();
+            this.setupControls();
+            this.setupInventoryUI();
+            this.setupCraftingUI();
+
+            // Eventi resize
+            window.addEventListener('resize', () => {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            this.debug("Inizializzazione completata");
         }
 
         setupLights() {
@@ -120,56 +286,315 @@
             const sun = new THREE.DirectionalLight(0xffffff, 0.8);
             sun.position.set(100, 100, 100);
             sun.castShadow = true;
+            sun.shadow.mapSize.width = 2048;
+            sun.shadow.mapSize.height = 2048;
             this.scene.add(sun);
-            this.debug("Luci configurate");
         }
 
         generateWorld() {
             const geometry = new THREE.BoxGeometry(1, 1, 1);
 
-            const materials = {
-                grass: new THREE.MeshStandardMaterial({ color: 0x55AA55 }),
-                dirt: new THREE.MeshStandardMaterial({ color: 0x8B4513 }),
-                stone: new THREE.MeshStandardMaterial({ color: 0x808080 })
-            };
-
-            for (let x = -5; x <= 5; x++) {
-                for (let z = -5; z <= 5; z++) {
-                    const height = Math.floor(Math.sin(x * 0.3) * 2 + Math.cos(z * 0.3) * 2) + 3;
+            // Genera terreno più grande e vario
+            for (let x = -10; x <= 10; x++) {
+                for (let z = -10; z <= 10; z++) {
+                    const height = Math.floor(
+                        (Math.sin(x * 0.3) * 2 + Math.cos(z * 0.3) * 2) + 
+                        (Math.random() * 0.5)
+                    ) + 4;
 
                     for (let y = 0; y < height; y++) {
                         let material;
                         if (y === height - 1) {
-                            material = materials.grass;
+                            material = this.blockMaterials.grass;
                         } else if (y > height - 3) {
-                            material = materials.dirt;
+                            material = this.blockMaterials.dirt;
                         } else {
-                            material = materials.stone;
+                            material = this.blockMaterials.stone;
                         }
 
-                        const block = new THREE.Mesh(geometry, material);
-                        block.position.set(x, y, z);
-                        block.castShadow = true;
-                        block.receiveShadow = true;
-                        this.scene.add(block);
-                        this.blocks.push(block);
+                        this.createBlock(x, y, z, material);
+                    }
+
+                    // Genera alberi casualmente
+                    if (Math.random() < 0.05 && height > 3) {
+                        this.generateTree(x, height, z);
                     }
                 }
             }
-            this.debug("Mondo generato");
+        }
+
+        generateTree(x, y, z) {
+            const trunkHeight = 4 + Math.floor(Math.random() * 2);
+            
+            // Tronco
+            for (let i = 0; i < trunkHeight; i++) {
+                this.createBlock(x, y + i, z, this.blockMaterials.wood);
+            }
+
+            // Foglie
+            for (let dx = -2; dx <= 2; dx++) {
+                for (let dz = -2; dz <= 2; dz++) {
+                    for (let dy = 0; dy <= 2; dy++) {
+                        if (Math.abs(dx) + Math.abs(dz) + Math.abs(dy) <= 3) {
+                            this.createBlock(
+                                x + dx,
+                                y + trunkHeight + dy - 1,
+                                z + dz,
+                                this.blockMaterials.leaves
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+                checkCollision(position) {
+            // Crea una box di collisione per il giocatore
+            const playerBox = new THREE.Box3();
+            const halfWidth = this.PLAYER_WIDTH / 2;
+            const playerMin = new THREE.Vector3(
+                position.x - halfWidth,
+                position.y,
+                position.z - halfWidth
+            );
+            const playerMax = new THREE.Vector3(
+                position.x + halfWidth,
+                position.y + this.PLAYER_HEIGHT,
+                position.z + halfWidth
+            );
+            playerBox.set(playerMin, playerMax);
+
+            // Controlla solo i blocchi vicini per ottimizzazione
+            for (const block of this.blocks) {
+                if (block.position.distanceTo(position) < 3) {
+                    const blockBox = new THREE.Box3().setFromObject(block);
+                    if (playerBox.intersectsBox(blockBox)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        setupCraftingUI() {
+            const craftingMenu = document.getElementById('craftingMenu');
+            craftingMenu.innerHTML = '';
+
+            // Crea la griglia di crafting 3x3
+            for (let i = 0; i < 9; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'craftingSlot';
+                slot.setAttribute('data-index', i);
+                slot.addEventListener('click', () => this.handleCraftingSlotClick(i));
+                craftingMenu.appendChild(slot);
+            }
+
+            // Aggiungi lo slot del risultato
+            const resultSlot = document.createElement('div');
+            resultSlot.className = 'craftingResult';
+            resultSlot.addEventListener('click', () => this.craftItem());
+            craftingMenu.appendChild(resultSlot);
+
+            // Aggiorna l'UI del crafting
+            this.updateCraftingUI();
+        }
+
+        handleCraftingSlotClick(index) {
+            const selectedItem = this.inventory.hotbar[this.inventory.selectedSlot];
+            const craftingSlot = this.inventory.craftingGrid[index];
+
+            if (selectedItem.count > 0) {
+                // Sposta l'oggetto dall'hotbar al crafting
+                if (craftingSlot.type === null) {
+                    craftingSlot.type = selectedItem.type;
+                    craftingSlot.count = 1;
+                    selectedItem.count--;
+                }
+            } else if (craftingSlot.type !== null) {
+                // Sposta l'oggetto dal crafting all'hotbar
+                if (selectedItem.type === null) {
+                    selectedItem.type = craftingSlot.type;
+                    selectedItem.count = craftingSlot.count;
+                    craftingSlot.type = null;
+                    craftingSlot.count = 0;
+                }
+            }
+
+            this.updateCraftingUI();
+            this.updateHotbarUI();
+            this.checkCraftingResult();
+        }
+
+        checkCraftingResult() {
+            // Converti la griglia di crafting in un formato confrontabile
+            const currentRecipe = [];
+            for (let i = 0; i < 9; i += 3) {
+                const row = [];
+                for (let j = 0; j < 3; j++) {
+                    const slot = this.inventory.craftingGrid[i + j];
+                    row.push(slot.type);
+                }
+                currentRecipe.push(row);
+            }
+
+            // Cerca una ricetta corrispondente
+            for (const recipe of this.craftingRecipes) {
+                if (this.compareRecipes(currentRecipe, recipe.input)) {
+                    const resultSlot = document.querySelector('.craftingResult');
+                    resultSlot.innerHTML = `
+                        <div class="blockPreview" style="background-color: ${this.getBlockColor(recipe.output.type)}">
+                            <span class="blockCount">${recipe.output.count}</span>
+                        </div>
+                    `;
+                    resultSlot.setAttribute('data-recipe', JSON.stringify(recipe.output));
+                    return;
+                }
+            }
+
+            // Nessuna ricetta trovata
+            document.querySelector('.craftingResult').innerHTML = '';
+            document.querySelector('.craftingResult').removeAttribute('data-recipe');
+        }
+
+        compareRecipes(current, recipe) {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (recipe[i][j] !== current[i][j]) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        craftItem() {
+            const resultSlot = document.querySelector('.craftingResult');
+            const recipeOutput = resultSlot.getAttribute('data-recipe');
+            
+            if (recipeOutput) {
+                const output = JSON.parse(recipeOutput);
+                
+                // Aggiungi l'oggetto craftato all'inventario
+                this.addToInventory(output.type, output.count);
+
+                // Pulisci la griglia di crafting
+                for (let i = 0; i < 9; i++) {
+                    this.inventory.craftingGrid[i] = { type: null, count: 0 };
+                }
+
+                this.updateCraftingUI();
+                this.checkCraftingResult();
+            }
+        }
+
+        addToInventory(type, count) {
+            // Cerca uno slot esistente non pieno
+            for (let slot of [...this.inventory.hotbar, ...this.inventory.items]) {
+                if (slot.type === type && slot.count < 64) {
+                    const spaceAvailable = 64 - slot.count;
+                    const amountToAdd = Math.min(count, spaceAvailable);
+                    slot.count += amountToAdd;
+                    count -= amountToAdd;
+                    if (count <= 0) return;
+                }
+            }
+
+            // Se rimangono oggetti, cerca slot vuoti
+            if (count > 0) {
+                for (let slot of [...this.inventory.hotbar, ...this.inventory.items]) {
+                    if (slot.type === null) {
+                        slot.type = type;
+                        slot.count = Math.min(count, 64);
+                        count -= slot.count;
+                        if (count <= 0) return;
+                    }
+                }
+            }
+
+            this.updateHotbarUI();
+        }
+
+                updateMovement() {
+            if (!document.pointerLockElement) return;
+
+            const moveSpeed = 0.15;
+            const direction = new THREE.Vector3();
+
+            // Calcola la direzione del movimento basata sull'input
+            if (this.keys['w']) direction.z -= 1;
+            if (this.keys['s']) direction.z += 1;
+            if (this.keys['a']) direction.x -= 1;
+            if (this.keys['d']) direction.x += 1;
+
+            direction.normalize();
+            direction.applyQuaternion(this.camera.quaternion);
+            direction.y = 0; // Mantieni il movimento orizzontale
+
+            // Applica la gravità
+            this.playerVelocity.y -= this.GRAVITY;
+
+            // Gestione del salto
+            if (this.keys[' '] && this.canJump) {
+                this.playerVelocity.y = this.JUMP_FORCE;
+                this.canJump = false;
+            }
+
+            // Calcola la nuova posizione
+            const newPosition = this.camera.position.clone();
+            
+            // Movimento orizzontale
+            const horizontalVelocity = direction.multiplyScalar(moveSpeed);
+            newPosition.add(horizontalVelocity);
+
+            // Check collisione orizzontale
+            if (!this.checkCollision(newPosition)) {
+                this.camera.position.copy(newPosition);
+            }
+
+            // Movimento verticale
+            const verticalPosition = this.camera.position.clone();
+            verticalPosition.y += this.playerVelocity.y;
+
+            // Check collisione verticale
+            if (!this.checkCollision(verticalPosition)) {
+                this.camera.position.y = verticalPosition.y;
+                this.canJump = false;
+            } else {
+                if (this.playerVelocity.y < 0) {
+                    this.canJump = true;
+                }
+                this.playerVelocity.y = 0;
+            }
+
+            // Aggiorna il debug info
+            this.updateDebugInfo();
+        }
+
+        updateDebugInfo() {
+            const pos = this.camera.position;
+            this.debugElement.innerHTML = `
+                Posizione: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>
+                Velocità Y: ${this.playerVelocity.y.toFixed(2)}<br>
+                Può saltare: ${this.canJump}<br>
+                FPS: ${Math.round(1000 / (performance.now() - this._lastFrameTime || 0))}
+            `;
+            this._lastFrameTime = performance.now();
         }
 
         setupControls() {
             this.keys = {};
-            this.moveSpeed = 0.1;
-            this.rotationSpeed = 0.003; // Aumentato per una rotazione più veloce
-
-            // Controlli tastiera
+            
+            // Keyboard controls
             window.addEventListener('keydown', (e) => {
                 this.keys[e.key.toLowerCase()] = true;
+                
+                // Gestione tasti speciali
+                if (e.key === 'e') {
+                    this.toggleCrafting();
+                }
                 if (e.key >= '1' && e.key <= '9') {
                     const index = parseInt(e.key) - 1;
-                    if (index < this.inventory.slots.length) {
+                    if (index < this.inventory.hotbar.length) {
                         this.selectInventorySlot(index);
                     }
                 }
@@ -179,213 +604,75 @@
                 this.keys[e.key.toLowerCase()] = false;
             });
 
-            // Controllo mouse
+            // Mouse controls
             this.renderer.domElement.addEventListener('click', () => {
-                this.renderer.domElement.requestPointerLock();
+                if (!document.pointerLockElement) {
+                    this.renderer.domElement.requestPointerLock();
+                }
             });
 
+            document.addEventListener('pointerlockchange', () => {
+                if (document.pointerLockElement === this.renderer.domElement) {
+                    document.getElementById('craftingMenu').style.display = 'none';
+                }
+            });
+
+            // Mouse movement
             document.addEventListener('mousemove', (e) => {
                 if (document.pointerLockElement === this.renderer.domElement) {
-                    this.camera.rotation.y -= e.movementX * this.rotationSpeed;
-                    this.camera.rotation.x -= e.movementY * this.rotationSpeed;
+                    this.camera.rotation.y -= e.movementX * 0.002;
+                    this.camera.rotation.x -= e.movementY * 0.002;
                     this.camera.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.camera.rotation.x));
                 }
             });
 
-            // Gestione blocchi
+            // Mouse buttons
             this.renderer.domElement.addEventListener('mousedown', (e) => {
                 if (document.pointerLockElement === this.renderer.domElement) {
-                    if (e.button === 0) {
+                    if (e.button === 0) { // Left click
                         this.handleBlockBreak();
-                    } else if (e.button === 2) {
+                    } else if (e.button === 2) { // Right click
                         this.handleBlockPlace();
                     }
                 }
             });
 
-            // Previeni menu contestuale
+            // Prevent context menu
             this.renderer.domElement.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
             });
 
-            this.debug("Controlli configurati");
-        }
-
-        setupInventoryUI() {
-            const hotbar = document.getElementById('hotbar');
-            hotbar.innerHTML = '';
-
-            for (let i = 0; i < this.inventory.slots.length; i++) {
-                const slot = document.createElement('div');
-                slot.style.cssText = `
-                    width: 50px;
-                    height: 50px;
-                    border: 2px solid ${i === this.inventory.selectedSlot ? '#fff' : '#666'};
-                    background: rgba(0, 0, 0, 0.3);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-family: monospace;
-                    cursor: pointer;
-                    user-select: none;
-                `;
-                this.updateSlotUI(slot, this.inventory.slots[i]);
-                slot.addEventListener('click', () => this.selectInventorySlot(i));
-                hotbar.appendChild(slot);
-            }
-            this.debug("Inventario configurato");
-        }
-
-        updateSlotUI(slotElement, slotData) {
-            const colors = {
-                'grass': '#55AA55',
-                'dirt': '#8B4513',
-                'stone': '#808080'
-            };
-            
-            slotElement.innerHTML = `
-                <div style="
-                    width: 30px;
-                    height: 30px;
-                    background: ${colors[slotData.type]};
-                    position: relative;
-                ">
-                    <span style="
-                        position: absolute;
-                        bottom: -20px;
-                        right: -20px;
-                        color: white;
-                        font-size: 12px;
-                    ">${slotData.count}</span>
-                </div>
-            `;
-        }
-
-        selectInventorySlot(index) {
-            const hotbar = document.getElementById('hotbar');
-            hotbar.children[this.inventory.selectedSlot].style.border = '2px solid #666';
-            hotbar.children[index].style.border = '2px solid #fff';
-            this.inventory.selectedSlot = index;
-        }
-
-        handleBlockBreak() {
-            const raycaster = new THREE.Raycaster();
-            const center = new THREE.Vector2(0, 0);
-            
-            raycaster.setFromCamera(center, this.camera);
-            const intersects = raycaster.intersectObjects(this.blocks);
-
-            if (intersects.length > 0) {
-                const block = intersects[0].object;
-                
-                // Determina il tipo di blocco
-                const blockType = block.material.color.getHexString() === '55aa55' ? 'grass' :
-                                block.material.color.getHexString() === '8b4513' ? 'dirt' : 'stone';
-
-                // Aggiungi il blocco all'inventario
-                const slot = this.inventory.slots.find(s => s.type === blockType && s.count < 64);
-                if (slot) {
-                    slot.count++;
-                    this.updateSlotUI(
-                        document.getElementById('hotbar').children[this.inventory.slots.indexOf(slot)],
-                        slot
-                    );
+            // Mouse wheel for hotbar selection
+            window.addEventListener('wheel', (e) => {
+                if (document.pointerLockElement === this.renderer.domElement) {
+                    const delta = Math.sign(e.deltaY);
+                    this.inventory.selectedSlot = 
+                        (this.inventory.selectedSlot + delta + this.inventory.hotbar.length) % 
+                        this.inventory.hotbar.length;
+                    this.updateHotbarUI();
                 }
-
-                // Rimuovi il blocco dal mondo
-                this.scene.remove(block);
-                this.blocks = this.blocks.filter(b => b !== block);
-            }
+            });
         }
 
-        handleBlockPlace() {
-            const raycaster = new THREE.Raycaster();
-            const center = new THREE.Vector2(0, 0);
-            
-            raycaster.setFromCamera(center, this.camera);
-            const intersects = raycaster.intersectObjects(this.blocks);
-
-            if (intersects.length > 0) {
-                const intersection = intersects[0];
-                const normal = intersection.face.normal;
-                const position = intersection.point.add(normal.multiplyScalar(0.5));
-
-                position.x = Math.round(position.x);
-                position.y = Math.round(position.y);
-                position.z = Math.round(position.z);
-
-                const blockExists = this.blocks.some(block => 
-                    block.position.x === position.x &&
-                    block.position.y === position.y &&
-                    block.position.z === position.z
-                );
-
-                if (!blockExists) {
-                    const selectedSlot = this.inventory.slots[this.inventory.selectedSlot];
-                    if (selectedSlot.count > 0) {
-                        const geometry = new THREE.BoxGeometry(1, 1, 1);
-                        const material = new THREE.MeshStandardMaterial({ 
-                            color: {
-                                'grass': 0x55AA55,
-                                'dirt': 0x8B4513,
-                                'stone': 0x808080
-                            }[selectedSlot.type]
-                        });
-
-                        const block = new THREE.Mesh(geometry, material);
-                        block.position.copy(position);
-                        block.castShadow = true;
-                        block.receiveShadow = true;
-                        this.scene.add(block);
-                        this.blocks.push(block);
-
-                        selectedSlot.count--;
-                        this.updateSlotUI(
-                            document.getElementById('hotbar').children[this.inventory.selectedSlot],
-                            selectedSlot
-                        );
-                    }
-                }
-            }
-        }
-
-        updateMovement() {
-            if (!this.keys) return;
-
-            const moveSpeed = this.moveSpeed;
-            const direction = new THREE.Vector3();
-
-            const forward = new THREE.Vector3(0, 0, -1);
-            forward.applyQuaternion(this.camera.quaternion);
-            forward.y = 0;
-            forward.normalize();
-
-            const right = new THREE.Vector3(1, 0, 0);
-            right.applyQuaternion(this.camera.quaternion);
-            right.y = 0;
-            right.normalize();
-
-            if (this.keys['w']) direction.add(forward);
-            if (this.keys['s']) direction.sub(forward);
-            if (this.keys['a']) direction.sub(right);
-            if (this.keys['d']) direction.add(right);
-            
-            if (this.keys[' ']) this.camera.position.y += moveSpeed;
-            if (this.keys['shift']) this.camera.position.y -= moveSpeed;
-
-            if (direction.length() > 0) {
-                direction.normalize();
-                this.camera.position.addScaledVector(direction, moveSpeed);
+        toggleCrafting() {
+            const craftingMenu = document.getElementById('craftingMenu');
+            if (craftingMenu.style.display === 'none' || craftingMenu.style.display === '') {
+                craftingMenu.style.display = 'grid';
+                document.exitPointerLock();
+            } else {
+                craftingMenu.style.display = 'none';
+                this.renderer.domElement.requestPointerLock();
             }
         }
 
         animate() {
             requestAnimationFrame(() => this.animate());
+
             try {
                 this.updateMovement();
                 this.renderer.render(this.scene, this.camera);
             } catch (error) {
+                console.error("Errore di rendering:", error);
                 this.debug("ERRORE ANIMAZIONE: " + error.message);
             }
         }
@@ -396,6 +683,7 @@
         }
     }
 
+    // Avvio del gioco
     window.onload = () => {
         try {
             const game = new MinecraftGame();
