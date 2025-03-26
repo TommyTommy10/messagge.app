@@ -665,6 +665,69 @@
             }
         }
 
+        // Aggiungi questi metodi nella classe MinecraftGame
+
+createBlock(x, y, z, material) {
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const block = new THREE.Mesh(geometry, material);
+    block.position.set(x, y, z);
+    block.castShadow = true;
+    block.receiveShadow = true;
+    this.scene.add(block);
+    this.blocks.push(block);
+    return block;
+}
+
+getBlockColor(type) {
+    const colors = {
+        'grass': '#55AA55',
+        'dirt': '#8B4513',
+        'stone': '#808080',
+        'wood': '#8B5A2B',
+        'leaves': '#2D5A27',
+        'workbench': '#8B4513',
+        'chest': '#A0522D',
+        'glass': '#AAAAAA',
+        'pickaxe': '#CCCCCC'
+    };
+    return colors[type] || '#000000';
+}
+
+setupInventoryUI() {
+    const hotbar = document.getElementById('hotbar');
+    hotbar.innerHTML = '';
+
+    for (let i = 0; i < this.inventory.hotbar.length; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'inventorySlot';
+        if (i === this.inventory.selectedSlot) {
+            slot.classList.add('selected');
+        }
+        this.updateSlotUI(slot, this.inventory.hotbar[i]);
+        slot.addEventListener('click', () => this.selectInventorySlot(i));
+        hotbar.appendChild(slot);
+    }
+}
+
+updateSlotUI(slotElement, slotData) {
+    if (slotData.type) {
+        slotElement.innerHTML = `
+            <div class="blockPreview" style="background-color: ${this.getBlockColor(slotData.type)}">
+                <span class="blockCount">${slotData.count}</span>
+            </div>
+        `;
+    } else {
+        slotElement.innerHTML = '';
+    }
+}
+
+updateCraftingUI() {
+    const craftingSlots = document.querySelectorAll('.craftingSlot');
+    craftingSlots.forEach((slot, index) => {
+        this.updateSlotUI(slot, this.inventory.craftingGrid[index]);
+    });
+}
+        
         animate() {
             requestAnimationFrame(() => this.animate());
 
