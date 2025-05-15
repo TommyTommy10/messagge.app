@@ -3,77 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sigaretta - Il Gioco della Carta Piegata</title>
+    <title>Gioco della Sigaretta</title>
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.js"></script>
     <style>
+        :root {
+            --primary-color: #ff6b6b;
+            --secondary-color: #4ecdc4;
+            --bg-color: #f7fff7;
+            --text-color: #2d3142;
+            --fold-color: #ffe66d;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 0;
-            background-color: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
         
         .container {
             max-width: 800px;
             margin: 0 auto;
-            padding: 20px;
-        }
-        
-        h1, h2 {
-            text-align: center;
-            color: #2c3e50;
+            padding: 2rem;
+            flex: 1;
         }
         
         .game-section {
             background-color: white;
             border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-bottom: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        h1, h2, h3 {
+            margin-top: 0;
+        }
+        
+        input, button, select {
+            padding: 0.75rem;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3db8af;
         }
         
         .hidden {
             display: none;
         }
         
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 5px;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: #2980b9;
-        }
-        
-        input[type="text"], select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
+        .paper-strip {
+            background-color: white;
             border: 1px solid #ddd;
+            padding: 1rem;
+            margin-top: 1rem;
             border-radius: 5px;
-            font-size: 16px;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        .player-list {
-            margin: 15px 0;
+        .fold-line {
+            border-top: 2px dashed var(--fold-color);
+            width: 100%;
+            margin: 1rem 0;
         }
         
-        .player-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            margin: 5px 0;
-            background-color: #f9f9f9;
+        .folded-section {
+            background-color: #f5f5f5;
+            color: #f5f5f5;
+            user-select: none;
+            padding: 1rem;
             border-radius: 5px;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        
+        .folded-section::after {
+            content: "Testo nascosto";
+            color: #aaa;
+            font-style: italic;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
         
         .player-color {
@@ -81,643 +120,697 @@
             height: 20px;
             border-radius: 50%;
             display: inline-block;
-            margin-right: 10px;
+            margin-right: 0.5rem;
+            vertical-align: middle;
         }
         
-        .paper-strip {
-            background-color: #fffcf0;
-            border: 1px solid #e0d9c0;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 5px;
-            min-height: 100px;
+        .prompt {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .results-container {
+            margin-top: 2rem;
+        }
+        
+        .story-result {
+            background-color: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             position: relative;
         }
         
-        .fold-line {
-            border-top: 1px dashed #999;
-            margin: 15px 0;
-        }
-        
-        .entry {
-            margin: 10px 0;
-            padding: 8px;
+        .story-line {
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
             border-radius: 5px;
         }
         
-        .results {
-            background-color: #fffcf0;
-            padding: 20px;
+        .player-list {
+            margin-top: 1rem;
+        }
+        
+        .player-item {
+            padding: 0.5rem;
             border-radius: 5px;
-            margin-top: 20px;
-            white-space: pre-line;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
         }
         
-        .instruction {
-            font-style: italic;
-            color: #666;
-            margin-bottom: 15px;
-        }
-        
-        .copy-code {
-            display: block;
-            margin: 15px auto;
-        }
-        
-        #game-link {
+        .game-code {
+            font-size: 2rem;
             font-weight: bold;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-radius: 5px;
             text-align: center;
-            margin: 10px 0;
-            word-break: break-all;
+            margin: 1rem 0;
+            color: var(--primary-color);
         }
         
-        .footer {
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            margin: 1rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        footer {
+            background-color: var(--text-color);
+            color: white;
             text-align: center;
-            margin-top: 30px;
-            color: #777;
-            font-size: 14px;
+            padding: 1rem;
+            margin-top: auto;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .game-section {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
 <body>
+    <header>
+        <h1>Gioco della Sigaretta</h1>
+    </header>
+    
     <div class="container">
-        <h1>Sigaretta</h1>
-        <h2>Il gioco della carta piegata</h2>
-        
-        <!-- Home Screen -->
-        <div id="home" class="game-section">
-            <div class="instruction">
-                Questo è un gioco di scrittura collaborativa dove ogni giocatore scrive una parte della storia senza vedere quello che hanno scritto gli altri!
-            </div>
-            <button id="create-game">Crea una nuova partita</button>
-            <button id="join-game">Unisciti a una partita</button>
-        </div>
-        
-        <!-- Create Game Section -->
-        <div id="create-game-section" class="game-section hidden">
-            <h2>Crea una nuova partita</h2>
-            <div>
-                <label for="creator-name">Il tuo nome:</label>
-                <input type="text" id="creator-name" placeholder="Inserisci il tuo nome">
-            </div>
-            <div>
-                <label for="questions">Scegli le domande per la partita:</label>
-                <select id="questions" multiple>
-                    <option value="chi" selected>Chi? (Personaggio)</option>
-                    <option value="con_chi" selected>Con chi? (Altro personaggio)</option>
-                    <option value="dove" selected>Dove? (Luogo)</option>
-                    <option value="cosa_facevano" selected>Cosa facevano?</option>
-                    <option value="cosa_ha_detto" selected>Cosa ha detto?</option>
-                    <option value="cosa_rispose" selected>Cosa rispose l'altro?</option>
-                    <option value="conseguenza" selected>Quali sono state le conseguenze?</option>
-                    <option value="custom">Domanda personalizzata</option>
-                </select>
-                <div id="custom-questions-container" class="hidden">
-                    <input type="text" id="custom-question" placeholder="Inserisci una domanda personalizzata">
-                    <button id="add-custom-question">Aggiungi</button>
+        <!-- Home Page -->
+        <div id="home-section" class="game-section">
+            <h2>Benvenuto al Gioco della Sigaretta!</h2>
+            <p>Un gioco divertente dove creerete storie pazze insieme ai vostri amici.</p>
+            
+            <div class="options">
+                <button id="create-game-btn">Crea Nuova Partita</button>
+                <div class="or" style="text-align: center; margin: 1rem 0;">- OPPURE -</div>
+                <div>
+                    <input type="text" id="join-code" placeholder="Inserisci codice partita" maxlength="6">
+                    <button id="join-game-btn">Partecipa</button>
                 </div>
             </div>
-            <div>
-                <button id="start-game">Inizia la partita</button>
-                <button class="back-home">Indietro</button>
-            </div>
         </div>
         
-        <!-- Join Game Section -->
-        <div id="join-game-section" class="game-section hidden">
-            <h2>Unisciti a una partita</h2>
-            <div>
-                <label for="player-name">Il tuo nome:</label>
-                <input type="text" id="player-name" placeholder="Inserisci il tuo nome">
-            </div>
-            <div>
-                <label for="game-code">Codice partita:</label>
-                <input type="text" id="game-code" placeholder="Inserisci il codice della partita">
-            </div>
-            <button id="join-button">Unisciti</button>
-            <button class="back-home">Indietro</button>
-        </div>
-        
-        <!-- Lobby Section -->
-        <div id="lobby" class="game-section hidden">
+        <!-- Lobby Page -->
+        <div id="lobby-section" class="game-section hidden">
             <h2>Sala d'attesa</h2>
+            <p>Condividi questo codice con i tuoi amici per farli partecipare:</p>
+            <div class="game-code" id="game-code-display">------</div>
+            
             <div>
-                <p>Codice partita: <span id="game-code-display"></span></p>
-                <p>Condividi questo link con i tuoi amici:</p>
-                <div id="game-link"></div>
-                <button id="copy-link">Copia link</button>
+                <p>Il tuo nome:</p>
+                <input type="text" id="player-name" placeholder="Inserisci il tuo nome">
+                <button id="set-name-btn">Imposta Nome</button>
             </div>
-            <div>
-                <h3>Giocatori connessi:</h3>
-                <div id="players-list" class="player-list"></div>
-            </div>
+            
+            <h3>Giocatori:</h3>
+            <div id="players-list" class="player-list"></div>
+            
             <div id="host-controls" class="hidden">
-                <button id="start-round">Inizia il gioco</button>
+                <p>Impostazioni di gioco:</p>
+                <select id="num-prompts">
+                    <option value="5">5 prompt</option>
+                    <option value="6">6 prompt</option>
+                    <option value="7" selected>7 prompt</option>
+                    <option value="8">8 prompt</option>
+                </select>
+                <button id="start-game-btn" disabled>Inizia Partita (min. 3 giocatori)</button>
             </div>
-            <button id="leave-game">Abbandona la partita</button>
         </div>
         
-        <!-- Game Play Section -->
-        <div id="gameplay" class="game-section hidden">
-            <h2>È il tuo turno!</h2>
-            <div class="instruction" id="current-prompt"></div>
-            <div class="paper-strip">
-                <div id="previous-entries"></div>
-                <div class="fold-line"></div>
-                <textarea id="player-entry" rows="3" placeholder="Scrivi la tua risposta qui..." style="width: 100%; margin: 10px 0;"></textarea>
+        <!-- Game Page -->
+        <div id="game-section" class="game-section hidden">
+            <h2>Turno <span id="current-round">1</span> di <span id="total-rounds">7</span></h2>
+            
+            <div id="waiting-message" class="hidden">
+                <p>In attesa che gli altri giocatori completino il turno...</p>
+                <div class="loader"></div>
             </div>
-            <button id="submit-entry">Invia e passa al prossimo giocatore</button>
+            
+            <div id="game-prompt" class="hidden">
+                <div class="prompt" id="prompt-text">Chi?</div>
+                <div class="paper-strip" id="paper-strip">
+                    <div id="folded-sections"></div>
+                    <textarea id="answer-input" rows="2" placeholder="Scrivi qui la tua risposta..."></textarea>
+                    <button id="submit-answer-btn">Invia e Piega</button>
+                </div>
+            </div>
         </div>
         
-        <!-- Waiting Section -->
-        <div id="waiting" class="game-section hidden">
-            <h2>Aspetta il tuo turno</h2>
-            <p>Qualcun altro sta scrivendo... attendi che sia il tuo turno!</p>
-            <div id="current-player-info"></div>
-        </div>
-        
-        <!-- Results Section -->
-        <div id="results" class="game-section hidden">
+        <!-- Results Page -->
+        <div id="results-section" class="game-section hidden">
             <h2>Risultati</h2>
-            <div id="stories-container"></div>
-            <button id="play-again">Gioca ancora</button>
-            <button id="new-game">Nuova partita</button>
-        </div>
-        
-        <div class="footer">
-            &copy; 2025 Gioco della Sigaretta - Versione digitale
+            <p>Ecco le storie pazze che avete creato!</p>
+            <div id="results-container" class="results-container"></div>
+            <button id="new-game-btn">Nuova Partita</button>
         </div>
     </div>
     
+    <div id="toast" class="toast"></div>
+    
+    <footer>
+        <p>Gioco della Sigaretta © 2025</p>
+    </footer>
+
     <script>
-        // Utility functions
-        function generateRandomCode() {
-            return Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
+        // Firebase configuration
+        // IMPORTANTE: Dovrai sostituire questi valori con quelli del tuo progetto Firebase
+        const firebaseConfig = {
+            apiKey: "INSERISCI_API_KEY_QUI",
+            authDomain: "tuo-progetto.firebaseapp.com",
+            databaseURL: "https://tuo-progetto-default-rtdb.firebaseio.com",
+            projectId: "tuo-progetto",
+            storageBucket: "tuo-progetto.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abc123def456"
+        };
         
-        function generateRandomColor() {
-            const colors = [
-                '#FF5733', '#33FF57', '#3357FF', '#F033FF', '#FF33A8',
-                '#33FFF5', '#FFF033', '#FF8C33', '#8C33FF', '#33FF8C'
-            ];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
+        // Inizializza Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM Elements
+        const homeSection = document.getElementById('home-section');
+        const lobbySection = document.getElementById('lobby-section');
+        const gameSection = document.getElementById('game-section');
+        const resultsSection = document.getElementById('results-section');
+        
+        const createGameBtn = document.getElementById('create-game-btn');
+        const joinGameBtn = document.getElementById('join-game-btn');
+        const joinCodeInput = document.getElementById('join-code');
+        const gameCodeDisplay = document.getElementById('game-code-display');
+        
+        const playerNameInput = document.getElementById('player-name');
+        const setNameBtn = document.getElementById('set-name-btn');
+        const playersList = document.getElementById('players-list');
+        const hostControls = document.getElementById('host-controls');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const numPromptsSelect = document.getElementById('num-prompts');
+        
+        const currentRoundSpan = document.getElementById('current-round');
+        const totalRoundsSpan = document.getElementById('total-rounds');
+        const waitingMessage = document.getElementById('waiting-message');
+        const gamePrompt = document.getElementById('game-prompt');
+        const promptText = document.getElementById('prompt-text');
+        const foldedSections = document.getElementById('folded-sections');
+        const answerInput = document.getElementById('answer-input');
+        const submitAnswerBtn = document.getElementById('submit-answer-btn');
+        
+        const resultsContainer = document.getElementById('results-container');
+        const newGameBtn = document.getElementById('new-game-btn');
+        
+        const toast = document.getElementById('toast');
         
         // Game state
-        let gameState = {
-            gameId: null,
-            isHost: false,
-            playerName: '',
-            playerColor: '',
-            players: [],
-            questions: [],
-            currentRound: 0,
-            currentPlayerIndex: 0,
-            stories: [],
-            gameStarted: false
-        };
+        let gameId = null;
+        let playerId = null;
+        let playerName = '';
+        let isHost = false;
+        let currentRound = 0;
+        let totalRounds = 7;
+        let playerColors = {};
+        let papers = [];
         
-        // Default questions
-        const defaultQuestions = [
-            "Chi? (Personaggio)",
-            "Con chi? (Altro personaggio)",
-            "Dove? (Luogo)",
-            "Cosa facevano?",
-            "Cosa ha detto?",
-            "Cosa rispose l'altro?",
-            "Quali sono state le conseguenze?"
+        // Prompts for each round
+        const defaultPrompts = [
+            "Chi?",
+            "Con chi?",
+            "Dove?",
+            "Cosa fa?",
+            "Chi dice?",
+            "Cosa dice?",
+            "Cosa succede dopo?"
         ];
         
-        // DOM elements
-        const sections = {
-            home: document.getElementById('home'),
-            createGame: document.getElementById('create-game-section'),
-            joinGame: document.getElementById('join-game-section'),
-            lobby: document.getElementById('lobby'),
-            gameplay: document.getElementById('gameplay'),
-            waiting: document.getElementById('waiting'),
-            results: document.getElementById('results')
-        };
-        
-        // Navigation functions
-        function showSection(sectionId) {
-            Object.values(sections).forEach(section => {
-                section.classList.add('hidden');
-            });
-            sections[sectionId].classList.remove('hidden');
+        // Generate a random 6-character game code
+        function generateGameCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
         }
         
-        // Event listeners for navigation
-        document.getElementById('create-game').addEventListener('click', () => {
-            showSection('createGame');
-        });
-        
-        document.getElementById('join-game').addEventListener('click', () => {
-            showSection('joinGame');
-        });
-        
-        document.querySelectorAll('.back-home').forEach(button => {
-            button.addEventListener('click', () => {
-                showSection('home');
-            });
-        });
-        
-        // Create game functionality
-        document.getElementById('questions').addEventListener('change', function() {
-            const customOption = Array.from(this.options).find(option => option.value === 'custom');
-            const customContainer = document.getElementById('custom-questions-container');
-            
-            if (customOption.selected) {
-                customContainer.classList.remove('hidden');
-            } else {
-                customContainer.classList.add('hidden');
-            }
-        });
-        
-        document.getElementById('add-custom-question').addEventListener('click', function() {
-            const customQuestionInput = document.getElementById('custom-question');
-            const questionsSelect = document.getElementById('questions');
-            
-            if (customQuestionInput.value.trim()) {
-                const option = document.createElement('option');
-                option.value = 'custom_' + new Date().getTime();
-                option.text = customQuestionInput.value.trim();
-                option.selected = true;
-                questionsSelect.add(option);
-                customQuestionInput.value = '';
-            }
-        });
-        
-        document.getElementById('start-game').addEventListener('click', function() {
-            const playerName = document.getElementById('creator-name').value.trim();
-            
-            if (!playerName) {
-                alert('Per favore, inserisci il tuo nome!');
-                return;
-            }
-            
-            const questionsSelect = document.getElementById('questions');
-            const selectedQuestions = Array.from(questionsSelect.options)
-                .filter(option => option.selected && option.value !== 'custom')
-                .map(option => option.text);
-            
-            if (selectedQuestions.length < 3) {
-                alert('Seleziona almeno 3 domande per la partita!');
-                return;
-            }
-            
-            // Create new game
-            gameState.gameId = generateRandomCode();
-            gameState.isHost = true;
-            gameState.playerName = playerName;
-            gameState.playerColor = generateRandomColor();
-            gameState.players = [{
-                id: 'player_' + new Date().getTime(),
-                name: playerName,
-                color: gameState.playerColor,
-                isHost: true
-            }];
-            gameState.questions = selectedQuestions;
-            
-            // Show lobby
-            document.getElementById('game-code-display').textContent = gameState.gameId;
-            document.getElementById('game-link').textContent = `${window.location.href.split('?')[0]}?gameId=${gameState.gameId}`;
-            document.getElementById('host-controls').classList.remove('hidden');
-            
-            updatePlayersList();
-            showSection('lobby');
-        });
-        
-        // Join game functionality
-        document.getElementById('join-button').addEventListener('click', function() {
-            const playerName = document.getElementById('player-name').value.trim();
-            const gameCode = document.getElementById('game-code').value.trim().toUpperCase();
-            
-            if (!playerName || !gameCode) {
-                alert('Per favore, inserisci il tuo nome e il codice della partita!');
-                return;
-            }
-            
-            // In a real implementation, you would check if the game exists on a server
-            // For this prototype, we'll just accept any code
-            gameState.gameId = gameCode;
-            gameState.isHost = false;
-            gameState.playerName = playerName;
-            gameState.playerColor = generateRandomColor();
-            
-            // Simulate joining a game
-            gameState.players = [
-                {
-                    id: 'host_' + new Date().getTime(),
-                    name: 'Host (simulato)',
-                    color: generateRandomColor(),
-                    isHost: true
-                },
-                {
-                    id: 'player_' + new Date().getTime(),
-                    name: playerName,
-                    color: gameState.playerColor,
-                    isHost: false
-                }
-            ];
-            
-            gameState.questions = defaultQuestions;
-            
-            // Show lobby
-            document.getElementById('game-code-display').textContent = gameState.gameId;
-            document.getElementById('game-link').textContent = `${window.location.href.split('?')[0]}?gameId=${gameState.gameId}`;
-            
-            updatePlayersList();
-            showSection('lobby');
-        });
-        
-        // Update players list in lobby
-        function updatePlayersList() {
-            const playersListElement = document.getElementById('players-list');
-            playersListElement.innerHTML = '';
-            
-            gameState.players.forEach(player => {
-                const playerItem = document.createElement('div');
-                playerItem.className = 'player-item';
-                
-                const colorSpan = document.createElement('span');
-                colorSpan.className = 'player-color';
-                colorSpan.style.backgroundColor = player.color;
-                
-                const nameSpan = document.createElement('span');
-                nameSpan.textContent = player.name + (player.isHost ? ' (Host)' : '');
-                
-                playerItem.appendChild(colorSpan);
-                playerItem.appendChild(nameSpan);
-                
-                playersListElement.appendChild(playerItem);
-            });
+        // Generate a random color for player
+        function generatePlayerColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return `hsl(${hue}, 70%, 60%)`;
         }
         
-        // Copy game link functionality
-        document.getElementById('copy-link').addEventListener('click', function() {
-            const gameLink = document.getElementById('game-link').textContent;
-            navigator.clipboard.writeText(gameLink).then(() => {
-                alert('Link copiato negli appunti!');
-            });
-        });
-        
-        // Leave game functionality
-        document.getElementById('leave-game').addEventListener('click', function() {
-            if (confirm('Sei sicuro di voler abbandonare la partita?')) {
-                gameState = {
-                    gameId: null,
-                    isHost: false,
-                    playerName: '',
-                    playerColor: '',
-                    players: [],
-                    questions: [],
-                    currentRound: 0,
-                    currentPlayerIndex: 0,
-                    stories: [],
-                    gameStarted: false
-                };
-                showSection('home');
-            }
-        });
-        
-        // Start round functionality
-        document.getElementById('start-round').addEventListener('click', function() {
-            if (gameState.players.length < 2) {
-                alert('Aspetta che si uniscano altri giocatori prima di iniziare!');
-                return;
-            }
+        // Show toast message
+        function showToast(message, duration = 3000) {
+            toast.textContent = message;
+            toast.classList.add('show');
             
-            // Initialize stories array
-            gameState.stories = gameState.players.map(player => ({
-                playerId: player.id,
-                entries: []
-            }));
-            
-            gameState.gameStarted = true;
-            gameState.currentRound = 0;
-            gameState.currentPlayerIndex = 0;
-            
-            // Start the first round
-            startRound();
-        });
-        
-        function startRound() {
-            // In a real implementation, you would notify all players
-            // For this prototype, we'll just simulate the game flow
-            
-            const currentPlayerId = gameState.players[gameState.currentPlayerIndex].id;
-            const currentPlayerName = gameState.players[gameState.currentPlayerIndex].name;
-            
-            // Check if this is your turn
-            const isYourTurn = currentPlayerName === gameState.playerName;
-            
-            if (isYourTurn) {
-                // Setup gameplay screen
-                document.getElementById('current-prompt').textContent = gameState.questions[gameState.currentRound];
-                document.getElementById('previous-entries').innerHTML = '';
-                document.getElementById('player-entry').value = '';
-                showSection('gameplay');
-            } else {
-                // Show waiting screen
-                document.getElementById('current-player-info').textContent = `${currentPlayerName} sta scrivendo...`;
-                showSection('waiting');
-                
-                // Simulate other player's turn
-                if (!gameState.isHost) {
-                    setTimeout(() => {
-                        simulateOtherPlayerTurn();
-                    }, 2000 + Math.random() * 3000);
-                }
-            }
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
         }
         
-        // Submit entry functionality
-        document.getElementById('submit-entry').addEventListener('click', function() {
-            const entry = document.getElementById('player-entry').value.trim();
+        // Set player ID in local storage
+        function setPlayerId() {
+            if (!localStorage.getItem('sigarettaPlayerId')) {
+                const newPlayerId = Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('sigarettaPlayerId', newPlayerId);
+            }
+            playerId = localStorage.getItem('sigarettaPlayerId');
+        }
+        
+        // Create a new game
+        createGameBtn.addEventListener('click', () => {
+            setPlayerId();
             
-            if (!entry) {
-                alert('Per favore, scrivi qualcosa prima di inviare!');
+            gameId = generateGameCode();
+            isHost = true;
+            
+            // Create game in Firebase
+            database.ref(`games/${gameId}`).set({
+                status: 'lobby',
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                hostId: playerId
+            }).then(() => {
+                gameCodeDisplay.textContent = gameId;
+                hostControls.classList.remove('hidden');
+                
+                // Navigate to lobby
+                homeSection.classList.add('hidden');
+                lobbySection.classList.remove('hidden');
+                
+                // Listen for player changes
+                listenForPlayers();
+            }).catch(error => {
+                console.error("Error creating game:", error);
+                showToast("Errore nella creazione della partita. Riprova.");
+            });
+        });
+        
+        // Join an existing game
+        joinGameBtn.addEventListener('click', () => {
+            const code = joinCodeInput.value.toUpperCase().trim();
+            
+            if (code.length !== 6) {
+                showToast("Codice partita non valido");
                 return;
             }
             
-            // Save entry to the current story
-            const storyIndex = gameState.currentPlayerIndex;
-            gameState.stories[storyIndex].entries.push({
-                question: gameState.questions[gameState.currentRound],
-                answer: entry,
-                playerId: gameState.players[gameState.currentPlayerIndex].id
-            });
+            setPlayerId();
             
-            // Move to next player or next round
-            moveToNextTurn();
-        });
-        
-        function moveToNextTurn() {
-            gameState.currentPlayerIndex++;
-            
-            // If all players have taken their turn, move to next round
-            if (gameState.currentPlayerIndex >= gameState.players.length) {
-                gameState.currentPlayerIndex = 0;
-                gameState.currentRound++;
+            // Check if game exists
+            database.ref(`games/${code}`).once('value').then(snapshot => {
+                const gameData = snapshot.val();
                 
-                // If all rounds are completed, show results
-                if (gameState.currentRound >= gameState.questions.length) {
-                    showResults();
+                if (!gameData) {
+                    showToast("Partita non trovata");
                     return;
                 }
+                
+                if (gameData.status !== 'lobby') {
+                    showToast("Questa partita è già iniziata");
+                    return;
+                }
+                
+                gameId = code;
+                isHost = (gameData.hostId === playerId);
+                
+                if (isHost) {
+                    hostControls.classList.remove('hidden');
+                }
+                
+                gameCodeDisplay.textContent = gameId;
+                
+                // Navigate to lobby
+                homeSection.classList.add('hidden');
+                lobbySection.classList.remove('hidden');
+                
+                // Listen for player changes
+                listenForPlayers();
+            }).catch(error => {
+                console.error("Error joining game:", error);
+                showToast("Errore nel partecipare alla partita");
+            });
+        });
+        
+        // Set player name
+        setNameBtn.addEventListener('click', () => {
+            const name = playerNameInput.value.trim();
+            
+            if (name.length < 2) {
+                showToast("Il nome deve avere almeno 2 caratteri");
+                return;
             }
             
-            // Start next turn
-            startRound();
-        }
-        
-        function simulateOtherPlayerTurn() {
-            const fakeAnswers = [
-                "Il presidente della Repubblica",
-                "Una bellissima ballerina",
-                "Un cane parlante",
-                "Un alieno verde",
-                "Con il suo migliore amico",
-                "Con una strega",
-                "Con un calciatore famoso",
-                "Al supermercato",
-                "Sulla luna",
-                "In una caverna segreta",
-                "In una biblioteca deserta",
-                "Stavano ballando il tango",
-                "Preparavano una pozione magica",
-                "Discutevano di filosofia",
-                "Ti ho sempre amato in segreto",
-                "Che bel tempo oggi, vero?",
-                "Posso prendere in prestito la tua astronave?",
-                "Mi dispiace, sono allergico alle tue bugie",
-                "Non mangio mai prima di mezzanotte",
-                "Solo se mi compri un gelato",
-                "Tutti si misero a ridere",
-                "Il mondo esplose in mille pezzi",
-                "Decisero di adottare un pinguino",
-                "Da quel giorno nessuno li ha più visti"
-            ];
+            playerName = name;
             
-            // Save fake entry to the current story
-            const storyIndex = gameState.currentPlayerIndex;
-            gameState.stories[storyIndex].entries.push({
-                question: gameState.questions[gameState.currentRound],
-                answer: fakeAnswers[Math.floor(Math.random() * fakeAnswers.length)],
-                playerId: gameState.players[gameState.currentPlayerIndex].id
+            // Add player to game
+            database.ref(`games/${gameId}/players/${playerId}`).set({
+                name: playerName,
+                color: generatePlayerColor(),
+                joinedAt: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                playerNameInput.disabled = true;
+                setNameBtn.disabled = true;
+                showToast("Nome impostato con successo!");
+            }).catch(error => {
+                console.error("Error setting name:", error);
+                showToast("Errore nell'impostazione del nome");
             });
-            
-            // Move to next turn
-            moveToNextTurn();
-        }
+        });
         
-        function showResults() {
-            const storiesContainer = document.getElementById('stories-container');
-            storiesContainer.innerHTML = '';
-            
-            // Process each story (folded paper) to create the final stories
-            gameState.stories.forEach((story, index) => {
-                const storyDiv = document.createElement('div');
-                storyDiv.className = 'results';
+        // Listen for players in the lobby
+        function listenForPlayers() {
+            database.ref(`games/${gameId}/players`).on('value', snapshot => {
+                const players = snapshot.val() || {};
+                const playerIds = Object.keys(players);
                 
-                // Create story title (each paper belongs to a player)
-                const playerName = gameState.players[index].name;
-                const playerColor = gameState.players[index].color;
+                // Update players list
+                playersList.innerHTML = '';
+                playerColors = {};
                 
-                const titleDiv = document.createElement('h3');
-                titleDiv.textContent = `Storia di ${playerName}`;
-                titleDiv.style.color = playerColor;
-                storyDiv.appendChild(titleDiv);
-                
-                // Create the full story text
-                let storyText = '';
-                story.entries.forEach((entry, i) => {
-                    const contributorName = gameState.players.find(p => p.id === entry.playerId)?.name || 'Sconosciuto';
-                    const contributorColor = gameState.players.find(p => p.id === entry.playerId)?.color || '#000';
+                playerIds.forEach(pid => {
+                    const player = players[pid];
+                    playerColors[pid] = player.color;
                     
-                    storyText += `<div class="entry" style="border-left: 3px solid ${contributorColor}">`;
-                    storyText += `<strong>${entry.question}</strong><br>`;
-                    storyText += `${entry.answer} <em>(scritto da ${contributorName})</em>`;
-                    storyText += `</div>`;
+                    const playerItem = document.createElement('div');
+                    playerItem.className = 'player-item';
+                    
+                    const colorDot = document.createElement('div');
+                    colorDot.className = 'player-color';
+                    colorDot.style.backgroundColor = player.color;
+                    
+                    const playerNameSpan = document.createElement('span');
+                    playerNameSpan.textContent = player.name + (pid === playerId ? ' (Tu)' : '') + (pid === snapshot.val().hostId ? ' (Host)' : '');
+                    
+                    playerItem.appendChild(colorDot);
+                    playerItem.appendChild(playerNameSpan);
+                    playersList.appendChild(playerItem);
                 });
                 
-                // Create a readable version of the story
-                const readableStoryDiv = document.createElement('div');
-                readableStoryDiv.innerHTML = `<h4>La storia completa:</h4>`;
-                
-                const storyParagraph = document.createElement('p');
-                const readableStory = story.entries.map(entry => entry.answer).join(' ');
-                storyParagraph.textContent = readableStory;
-                
-                readableStoryDiv.appendChild(storyParagraph);
-                
-                // Add both versions to the container
-                const entriesDiv = document.createElement('div');
-                entriesDiv.innerHTML = storyText;
-                storyDiv.appendChild(entriesDiv);
-                storyDiv.appendChild(document.createElement('hr'));
-                storyDiv.appendChild(readableStoryDiv);
-                
-                storiesContainer.appendChild(storyDiv);
+                // Update start button state
+                if (isHost) {
+                    startGameBtn.disabled = playerIds.length < 2; // Per test: almeno 2 giocatori invece di 3
+                }
             });
             
-            showSection('results');
-        }
-        
-        // Play again functionality
-        document.getElementById('play-again').addEventListener('click', function() {
-            if (gameState.isHost) {
-                // Reset game state for a new round but keep players
-                gameState.currentRound = 0;
-                gameState.currentPlayerIndex = 0;
-                gameState.stories = [];
-                gameState.gameStarted = false;
+            // Listen for game status changes
+            database.ref(`games/${gameId}/status`).on('value', snapshot => {
+                const status = snapshot.val();
                 
-                // Show lobby
-                showSection('lobby');
-            } else {
-                alert('Solo l\'host può avviare una nuova partita!');
-            }
-        });
-        
-        // New game functionality
-        document.getElementById('new-game').addEventListener('click', function() {
-            // Reset all game state
-            gameState = {
-                gameId: null,
-                isHost: false,
-                playerName: '',
-                playerColor: '',
-                players: [],
-                questions: [],
-                currentRound: 0,
-                currentPlayerIndex: 0,
-                stories: [],
-                gameStarted: false
-            };
-            
-            // Go back to home
-            showSection('home');
-        });
-        
-        // Check URL for game code on page load
-        function checkUrlForGameCode() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const gameId = urlParams.get('gameId');
-            
-            if (gameId) {
-                document.getElementById('game-code').value = gameId;
-                showSection('joinGame');
-            }
+                if (status === 'playing') {
+                    lobbySection.classList.add('hidden');
+                    gameSection.classList.remove('hidden');
+                    
+                    // Get game settings
+                    database.ref(`games/${gameId}/settings`).once('value').then(settingsSnapshot => {
+                        const settings = settingsSnapshot.val() || {};
+                        totalRounds = settings.numPrompts || 7;
+                        totalRoundsSpan.textContent = totalRounds;
+                        
+                        // Initialize game
+                        listenForRound();
+                    });
+                } else if (status === 'completed') {
+                    gameSection.classList.add('hidden');
+                    resultsSection.classList.remove('hidden');
+                    showResults();
+                }
+            });
         }
         
-        // Initialize on page load
-        window.addEventListener('load', function() {
-            checkUrlForGameCode();
+        // Start the game
+        startGameBtn.addEventListener('click', () => {
+            if (!isHost) return;
+            
+            const numPrompts = parseInt(numPromptsSelect.value);
+            let prompts = defaultPrompts.slice(0, numPrompts);
+            
+            // Get player IDs in order
+            database.ref(`games/${gameId}/players`).once('value').then(snapshot => {
+                const players = snapshot.val() || {};
+                const playerIds = Object.keys(players);
+                
+                // Create paper assignments
+                const papers = playerIds.map((pid, index) => {
+                    return {
+                        id: `paper_${index}`,
+                        currentPlayer: pid,
+                        rounds: []
+                    };
+                });
+                
+                // Update game state
+                database.ref(`games/${gameId}`).update({
+                    status: 'playing',
+                    currentRound: 1,
+                    settings: {
+                        numPrompts: numPrompts,
+                        prompts: prompts
+                    },
+                    papers: papers
+                }).then(() => {
+                    // Game started successfully
+                }).catch(error => {
+                    console.error("Error starting game:", error);
+                    showToast("Errore nell'avvio della partita");
+                });
+            });
+        });
+        
+        // Listen for current round
+        function listenForRound() {
+            database.ref(`games/${gameId}/currentRound`).on('value', snapshot => {
+                currentRound = snapshot.val() || 1;
+                currentRoundSpan.textContent = currentRound;
+                
+                if (currentRound > totalRounds) {
+                    // Game is complete
+                    database.ref(`games/${gameId}`).update({
+                        status: 'completed'
+                    });
+                    return;
+                }
+                
+                // Get current paper assignment
+                database.ref(`games/${gameId}/papers`).once('value').then(papersSnapshot => {
+                    const allPapers = papersSnapshot.val() || [];
+                    papers = allPapers;
+                    
+                    // Find paper assigned to this player
+                    const myPaper = allPapers.find(paper => paper.currentPlayer === playerId);
+                    
+                    if (myPaper) {
+                        // Show prompt for this round
+                        database.ref(`games/${gameId}/settings/prompts`).once('value').then(promptsSnapshot => {
+                            const prompts = promptsSnapshot.val() || defaultPrompts;
+                            const roundPrompt = prompts[currentRound - 1] || `Prompt ${currentRound}`;
+                            
+                            promptText.textContent = roundPrompt;
+                            waitingMessage.classList.add('hidden');
+                            gamePrompt.classList.remove('hidden');
+                            
+                            // Show folded sections
+                            foldedSections.innerHTML = '';
+                            if (myPaper.rounds && myPaper.rounds.length > 0) {
+                                myPaper.rounds.forEach((round, index) => {
+                                    const foldedSection = document.createElement('div');
+                                    foldedSection.className = 'folded-section';
+                                    foldedSection.textContent = round.answer;
+                                    foldedSections.appendChild(foldedSection);
+                                });
+                                
+                                if (myPaper.rounds.length > 0) {
+                                    const foldLine = document.createElement('div');
+                                    foldLine.className = 'fold-line';
+                                    foldedSections.appendChild(foldLine);
+                                }
+                            }
+                            
+                            // Clear input
+                            answerInput.value = '';
+                        });
+                    } else {
+                        // Wait for other players
+                        gamePrompt.classList.add('hidden');
+                        waitingMessage.classList.remove('hidden');
+                    }
+                });
+            });
+        }
+        
+        // Submit answer for current round
+        submitAnswerBtn.addEventListener('click', () => {
+            const answer = answerInput.value.trim();
+            
+            if (!answer) {
+                showToast("Inserisci una risposta");
+                return;
+            }
+            
+            // Find current paper
+            const myPaper = papers.find(paper => paper.currentPlayer === playerId);
+            
+            if (!myPaper) {
+                showToast("Errore: Carta non trovata");
+                return;
+            }
+            
+            // Add answer to paper
+            database.ref(`games/${gameId}/settings/prompts`).once('value').then(promptsSnapshot => {
+                const prompts = promptsSnapshot.val() || defaultPrompts;
+                const roundPrompt = prompts[currentRound - 1] || `Prompt ${currentRound}`;
+                
+                const roundData = {
+                    round: currentRound,
+                    prompt: roundPrompt,
+                    answer: answer,
+                    playerId: playerId
+                };
+                
+                const paperRef = database.ref(`games/${gameId}/papers/${papers.indexOf(myPaper)}`);
+                
+                // Add round data
+                paperRef.child('rounds').child(currentRound - 1).set(roundData).then(() => {
+                    // Determine next player
+                    database.ref(`games/${gameId}/players`).once('value').then(playersSnapshot => {
+                        const players = playersSnapshot.val() || {};
+                        const playerIds = Object.keys(players);
+                        
+                        // Rotate papers (pass to next player)
+                        const currentIndex = playerIds.indexOf(playerId);
+                        const nextIndex = (currentIndex + 1) % playerIds.length;
+                        const nextPlayerId = playerIds[nextIndex];
+                        
+                        // Update paper assignment
+                        paperRef.update({
+                            currentPlayer: nextPlayerId
+                        }).then(() => {
+                            // Check if all players have submitted for this round
+                            checkRoundCompletion();
+                            
+                            // Show waiting message
+                            gamePrompt.classList.add('hidden');
+                            waitingMessage.classList.remove('hidden');
+                        });
+                    });
+                });
+            });
+        });
+        
+        // Check if all players have completed the current round
+        function checkRoundCompletion() {
+            if (!isHost) return;
+            
+            database.ref(`games/${gameId}/papers`).once('value').then(papersSnapshot => {
+                const allPapers = papersSnapshot.val() || [];
+                const allCompleted = allPapers.every(paper => {
+                    return paper.rounds && paper.rounds.length >= currentRound;
+                });
+                
+                if (allCompleted) {
+                    // Advance to next round
+                    database.ref(`games/${gameId}`).update({
+                        currentRound: currentRound + 1
+                    });
+                }
+            });
+        }
+        
+        // Show game results
+        function showResults() {
+            database.ref(`games/${gameId}`).once('value').then(snapshot => {
+                const gameData = snapshot.val();
+                const papers = gameData.papers || [];
+                const players = gameData.players || {};
+                
+                resultsContainer.innerHTML = '';
+                
+                papers.forEach((paper, paperIndex) => {
+                    const storyDiv = document.createElement('div');
+                    storyDiv.className = 'story-result';
+                    
+                    const rounds = paper.rounds || [];
+                    const storyTitle = document.createElement('h3');
+                    storyTitle.textContent = `Storia ${paperIndex + 1}`;
+                    storyDiv.appendChild(storyTitle);
+                    
+                    rounds.forEach(round => {
+                        const lineDiv = document.createElement('div');
+                        lineDiv.className = 'story-line';
+                        lineDiv.style.backgroundColor = `${playerColors[round.playerId]}20`; // 20 for transparency
+                        lineDiv.style.borderLeft = `4px solid ${playerColors[round.playerId]}`;
+                        
+                        const promptSpan = document.createElement('strong');
+                        promptSpan.textContent = round.prompt + ': ';
+                        
+                        const answerSpan = document.createElement('span');
+                        answerSpan.textContent = round.answer;
+                        
+                        lineDiv.appendChild(promptSpan);
+                        lineDiv.appendChild(answerSpan);
+                        storyDiv.appendChild(lineDiv);
+                    });
+                    
+                    resultsContainer.appendChild(storyDiv);
+                });
+            });
+        }
+        
+        // Start a new game
+        newGameBtn.addEventListener('click', () => {
+            resultsSection.classList.add('hidden');
+            homeSection.classList.remove('hidden');
+            
+            // Reset game state
+            database.ref(`games/${gameId}`).off();
+            gameId = null;
+            isHost = false;
+            currentRound = 0;
+            papers = [];
+            
+            // Reset UI
+            playerNameInput.disabled = false;
+            setNameBtn.disabled = false;
+            playerNameInput.value = playerName;
+            hostControls.classList.add('hidden');
+        });
+        
+        // Keyboard shortcut for submitting answer
+        answerInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitAnswerBtn.click();
+            }
         });
     </script>
 </body>
