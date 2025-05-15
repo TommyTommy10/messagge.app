@@ -3,32 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gioco della Sigaretta</title>
+    <title>Sigaretta - Il Gioco della Carta Piegata</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
         }
-        .container {
+        
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        
+        .game-section {
             background-color: white;
             border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-        }
-        .setup-section, .game-section, .results-section {
             margin-bottom: 20px;
         }
+        
         .hidden {
             display: none;
         }
+        
         button {
             background-color: #3498db;
             color: white;
@@ -37,523 +45,680 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            margin: 5px 0;
+            margin: 5px;
+            transition: background-color 0.3s;
         }
+        
         button:hover {
             background-color: #2980b9;
         }
-        input, textarea {
+        
+        input[type="text"], select {
             width: 100%;
             padding: 10px;
-            margin: 5px 0 15px 0;
+            margin: 10px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
-            box-sizing: border-box;
+            font-size: 16px;
         }
-        .player-card {
-            background-color: #f9f9f9;
-            border-left: 4px solid #3498db;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .prompt {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .story-container {
-            background-color: #f9f9f9;
-            border-left: 4px solid #27ae60;
-            padding: 15px;
+        
+        .player-list {
             margin: 15px 0;
-            border-radius: 5px;
         }
-        .waiting-message {
-            text-align: center;
-            padding: 20px;
-            font-style: italic;
-            color: #7f8c8d;
-        }
-        .progress-indicator {
+        
+        .player-item {
             display: flex;
             justify-content: space-between;
-            margin: 20px 0;
-        }
-        .progress-step {
-            flex: 1;
-            text-align: center;
-            position: relative;
-        }
-        .progress-step::after {
-            content: '';
-            height: 2px;
-            background-color: #ddd;
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            right: -50%;
-            z-index: 1;
-        }
-        .progress-step:last-child::after {
-            display: none;
-        }
-        .progress-step .step-number {
-            width: 30px;
-            height: 30px;
-            background-color: #ddd;
-            border-radius: 50%;
-            display: inline-flex;
-            justify-content: center;
             align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .player-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .paper-strip {
+            background-color: #fffcf0;
+            border: 1px solid #e0d9c0;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            min-height: 100px;
             position: relative;
-            z-index: 2;
         }
-        .progress-step.active .step-number {
-            background-color: #3498db;
-            color: white;
+        
+        .fold-line {
+            border-top: 1px dashed #999;
+            margin: 15px 0;
         }
-        .progress-step.completed .step-number {
-            background-color: #27ae60;
-            color: white;
+        
+        .entry {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+        }
+        
+        .results {
+            background-color: #fffcf0;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+            white-space: pre-line;
+        }
+        
+        .instruction {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .copy-code {
+            display: block;
+            margin: 15px auto;
+        }
+        
+        #game-link {
+            font-weight: bold;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Gioco della Sigaretta</h1>
+        <h1>Sigaretta</h1>
+        <h2>Il gioco della carta piegata</h2>
         
-        <!-- Configurazione del gioco -->
-        <div id="setup" class="setup-section">
-            <h2>Configurazione del gioco</h2>
+        <!-- Home Screen -->
+        <div id="home" class="game-section">
+            <div class="instruction">
+                Questo è un gioco di scrittura collaborativa dove ogni giocatore scrive una parte della storia senza vedere quello che hanno scritto gli altri!
+            </div>
+            <button id="create-game">Crea una nuova partita</button>
+            <button id="join-game">Unisciti a una partita</button>
+        </div>
+        
+        <!-- Create Game Section -->
+        <div id="create-game-section" class="game-section hidden">
+            <h2>Crea una nuova partita</h2>
             <div>
-                <label for="gameId">ID Partita (lascia vuoto per creare una nuova):</label>
-                <input type="text" id="gameId" placeholder="Inserisci ID partita per unirti">
+                <label for="creator-name">Il tuo nome:</label>
+                <input type="text" id="creator-name" placeholder="Inserisci il tuo nome">
             </div>
             <div>
-                <label for="playerName">Il tuo nome:</label>
-                <input type="text" id="playerName" placeholder="Inserisci il tuo nome">
+                <label for="questions">Scegli le domande per la partita:</label>
+                <select id="questions" multiple>
+                    <option value="chi" selected>Chi? (Personaggio)</option>
+                    <option value="con_chi" selected>Con chi? (Altro personaggio)</option>
+                    <option value="dove" selected>Dove? (Luogo)</option>
+                    <option value="cosa_facevano" selected>Cosa facevano?</option>
+                    <option value="cosa_ha_detto" selected>Cosa ha detto?</option>
+                    <option value="cosa_rispose" selected>Cosa rispose l'altro?</option>
+                    <option value="conseguenza" selected>Quali sono state le conseguenze?</option>
+                    <option value="custom">Domanda personalizzata</option>
+                </select>
+                <div id="custom-questions-container" class="hidden">
+                    <input type="text" id="custom-question" placeholder="Inserisci una domanda personalizzata">
+                    <button id="add-custom-question">Aggiungi</button>
+                </div>
             </div>
             <div>
-                <button id="createGame">Crea nuova partita</button>
-                <button id="joinGame">Unisciti alla partita</button>
+                <button id="start-game">Inizia la partita</button>
+                <button class="back-home">Indietro</button>
             </div>
-            <div id="gameIdDisplay" class="hidden">
-                <p>ID Partita: <span id="currentGameId"></span></p>
-                <p>Condividi questo ID con gli altri giocatori per farli unire alla partita.</p>
+        </div>
+        
+        <!-- Join Game Section -->
+        <div id="join-game-section" class="game-section hidden">
+            <h2>Unisciti a una partita</h2>
+            <div>
+                <label for="player-name">Il tuo nome:</label>
+                <input type="text" id="player-name" placeholder="Inserisci il tuo nome">
             </div>
-            <div id="playersWaiting">
+            <div>
+                <label for="game-code">Codice partita:</label>
+                <input type="text" id="game-code" placeholder="Inserisci il codice della partita">
+            </div>
+            <button id="join-button">Unisciti</button>
+            <button class="back-home">Indietro</button>
+        </div>
+        
+        <!-- Lobby Section -->
+        <div id="lobby" class="game-section hidden">
+            <h2>Sala d'attesa</h2>
+            <div>
+                <p>Codice partita: <span id="game-code-display"></span></p>
+                <p>Condividi questo link con i tuoi amici:</p>
+                <div id="game-link"></div>
+                <button id="copy-link">Copia link</button>
+            </div>
+            <div>
                 <h3>Giocatori connessi:</h3>
-                <ul id="playersList"></ul>
-                <button id="startGame" class="hidden">Inizia il gioco</button>
+                <div id="players-list" class="player-list"></div>
             </div>
+            <div id="host-controls" class="hidden">
+                <button id="start-round">Inizia il gioco</button>
+            </div>
+            <button id="leave-game">Abbandona la partita</button>
         </div>
         
-        <!-- Sezione di gioco -->
-        <div id="game" class="game-section hidden">
-            <div class="progress-indicator" id="progressIndicator">
-                <!-- Qui verranno aggiunti dinamicamente i passaggi -->
+        <!-- Game Play Section -->
+        <div id="gameplay" class="game-section hidden">
+            <h2>È il tuo turno!</h2>
+            <div class="instruction" id="current-prompt"></div>
+            <div class="paper-strip">
+                <div id="previous-entries"></div>
+                <div class="fold-line"></div>
+                <textarea id="player-entry" rows="3" placeholder="Scrivi la tua risposta qui..." style="width: 100%; margin: 10px 0;"></textarea>
             </div>
-            <div id="promptContainer" class="prompt"></div>
-            <textarea id="playerAnswer" rows="3" placeholder="Scrivi qui la tua risposta..."></textarea>
-            <button id="submitAnswer">Invia risposta</button>
-            <div id="waitingForOthers" class="waiting-message hidden">
-                <p>In attesa che gli altri giocatori completino questo turno...</p>
-            </div>
+            <button id="submit-entry">Invia e passa al prossimo giocatore</button>
         </div>
         
-        <!-- Sezione dei risultati -->
-        <div id="results" class="results-section hidden">
-            <h2>Risultati finali</h2>
-            <div id="storiesContainer"></div>
-            <button id="playAgain">Gioca ancora</button>
+        <!-- Waiting Section -->
+        <div id="waiting" class="game-section hidden">
+            <h2>Aspetta il tuo turno</h2>
+            <p>Qualcun altro sta scrivendo... attendi che sia il tuo turno!</p>
+            <div id="current-player-info"></div>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="results" class="game-section hidden">
+            <h2>Risultati</h2>
+            <div id="stories-container"></div>
+            <button id="play-again">Gioca ancora</button>
+            <button id="new-game">Nuova partita</button>
+        </div>
+        
+        <div class="footer">
+            &copy; 2025 Gioco della Sigaretta - Versione digitale
         </div>
     </div>
-
+    
     <script>
-        // Simulazione del database con localStorage
-        const DB = {
-            createGame: function(gameId) {
-                const game = {
-                    id: gameId,
-                    players: [],
-                    status: 'waiting', // waiting, playing, completed
-                    currentRound: 0,
-                    prompts: [
-                        "Chi?",
-                        "Ha incontrato chi?",
-                        "Dove?",
-                        "Quando?",
-                        "Cosa stavano facendo?",
-                        "Lui/Lei ha detto...",
-                        "L'altro/a ha risposto..."
-                    ],
-                    answers: {},
-                    stories: []
-                };
-                localStorage.setItem('game_' + gameId, JSON.stringify(game));
-                return game;
-            },
-            getGame: function(gameId) {
-                const gameData = localStorage.getItem('game_' + gameId);
-                return gameData ? JSON.parse(gameData) : null;
-            },
-            updateGame: function(game) {
-                localStorage.setItem('game_' + game.id, JSON.stringify(game));
-            },
-            removeGame: function(gameId) {
-                localStorage.removeItem('game_' + gameId);
-            }
-        };
-
-        // Generazione di un ID casuale
-        function generateGameId() {
+        // Utility functions
+        function generateRandomCode() {
             return Math.random().toString(36).substring(2, 8).toUpperCase();
         }
-
-        // Elementi DOM
-        const elements = {
-            setup: document.getElementById('setup'),
-            game: document.getElementById('game'),
-            results: document.getElementById('results'),
-            gameId: document.getElementById('gameId'),
-            playerName: document.getElementById('playerName'),
-            createGame: document.getElementById('createGame'),
-            joinGame: document.getElementById('joinGame'),
-            gameIdDisplay: document.getElementById('gameIdDisplay'),
-            currentGameId: document.getElementById('currentGameId'),
-            playersList: document.getElementById('playersList'),
-            startGame: document.getElementById('startGame'),
-            promptContainer: document.getElementById('promptContainer'),
-            playerAnswer: document.getElementById('playerAnswer'),
-            submitAnswer: document.getElementById('submitAnswer'),
-            waitingForOthers: document.getElementById('waitingForOthers'),
-            storiesContainer: document.getElementById('storiesContainer'),
-            playAgain: document.getElementById('playAgain'),
-            progressIndicator: document.getElementById('progressIndicator')
-        };
-
-        // Stato dell'applicazione
-        let appState = {
-            currentGameId: null,
-            playerName: '',
+        
+        function generateRandomColor() {
+            const colors = [
+                '#FF5733', '#33FF57', '#3357FF', '#F033FF', '#FF33A8',
+                '#33FFF5', '#FFF033', '#FF8C33', '#8C33FF', '#33FF8C'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+        
+        // Game state
+        let gameState = {
+            gameId: null,
             isHost: false,
-            currentPromptIndex: 0,
-            interval: null
+            playerName: '',
+            playerColor: '',
+            players: [],
+            questions: [],
+            currentRound: 0,
+            currentPlayerIndex: 0,
+            stories: [],
+            gameStarted: false
         };
-
-        // Event listeners
-        elements.createGame.addEventListener('click', function() {
-            const playerName = elements.playerName.value.trim();
+        
+        // Default questions
+        const defaultQuestions = [
+            "Chi? (Personaggio)",
+            "Con chi? (Altro personaggio)",
+            "Dove? (Luogo)",
+            "Cosa facevano?",
+            "Cosa ha detto?",
+            "Cosa rispose l'altro?",
+            "Quali sono state le conseguenze?"
+        ];
+        
+        // DOM elements
+        const sections = {
+            home: document.getElementById('home'),
+            createGame: document.getElementById('create-game-section'),
+            joinGame: document.getElementById('join-game-section'),
+            lobby: document.getElementById('lobby'),
+            gameplay: document.getElementById('gameplay'),
+            waiting: document.getElementById('waiting'),
+            results: document.getElementById('results')
+        };
+        
+        // Navigation functions
+        function showSection(sectionId) {
+            Object.values(sections).forEach(section => {
+                section.classList.add('hidden');
+            });
+            sections[sectionId].classList.remove('hidden');
+        }
+        
+        // Event listeners for navigation
+        document.getElementById('create-game').addEventListener('click', () => {
+            showSection('createGame');
+        });
+        
+        document.getElementById('join-game').addEventListener('click', () => {
+            showSection('joinGame');
+        });
+        
+        document.querySelectorAll('.back-home').forEach(button => {
+            button.addEventListener('click', () => {
+                showSection('home');
+            });
+        });
+        
+        // Create game functionality
+        document.getElementById('questions').addEventListener('change', function() {
+            const customOption = Array.from(this.options).find(option => option.value === 'custom');
+            const customContainer = document.getElementById('custom-questions-container');
+            
+            if (customOption.selected) {
+                customContainer.classList.remove('hidden');
+            } else {
+                customContainer.classList.add('hidden');
+            }
+        });
+        
+        document.getElementById('add-custom-question').addEventListener('click', function() {
+            const customQuestionInput = document.getElementById('custom-question');
+            const questionsSelect = document.getElementById('questions');
+            
+            if (customQuestionInput.value.trim()) {
+                const option = document.createElement('option');
+                option.value = 'custom_' + new Date().getTime();
+                option.text = customQuestionInput.value.trim();
+                option.selected = true;
+                questionsSelect.add(option);
+                customQuestionInput.value = '';
+            }
+        });
+        
+        document.getElementById('start-game').addEventListener('click', function() {
+            const playerName = document.getElementById('creator-name').value.trim();
+            
             if (!playerName) {
-                alert('Per favore, inserisci il tuo nome.');
+                alert('Per favore, inserisci il tuo nome!');
                 return;
             }
-
-            const gameId = generateGameId();
-            const game = DB.createGame(gameId);
             
-            game.players.push({
-                id: Date.now().toString(),
+            const questionsSelect = document.getElementById('questions');
+            const selectedQuestions = Array.from(questionsSelect.options)
+                .filter(option => option.selected && option.value !== 'custom')
+                .map(option => option.text);
+            
+            if (selectedQuestions.length < 3) {
+                alert('Seleziona almeno 3 domande per la partita!');
+                return;
+            }
+            
+            // Create new game
+            gameState.gameId = generateRandomCode();
+            gameState.isHost = true;
+            gameState.playerName = playerName;
+            gameState.playerColor = generateRandomColor();
+            gameState.players = [{
+                id: 'player_' + new Date().getTime(),
                 name: playerName,
+                color: gameState.playerColor,
                 isHost: true
-            });
+            }];
+            gameState.questions = selectedQuestions;
             
-            DB.updateGame(game);
-            
-            appState.currentGameId = gameId;
-            appState.playerName = playerName;
-            appState.isHost = true;
-            
-            elements.currentGameId.textContent = gameId;
-            elements.gameIdDisplay.classList.remove('hidden');
-            elements.startGame.classList.remove('hidden');
+            // Show lobby
+            document.getElementById('game-code-display').textContent = gameState.gameId;
+            document.getElementById('game-link').textContent = `${window.location.href.split('?')[0]}?gameId=${gameState.gameId}`;
+            document.getElementById('host-controls').classList.remove('hidden');
             
             updatePlayersList();
-            startPolling();
+            showSection('lobby');
         });
-
-        elements.joinGame.addEventListener('click', function() {
-            const gameId = elements.gameId.value.trim();
-            const playerName = elements.playerName.value.trim();
+        
+        // Join game functionality
+        document.getElementById('join-button').addEventListener('click', function() {
+            const playerName = document.getElementById('player-name').value.trim();
+            const gameCode = document.getElementById('game-code').value.trim().toUpperCase();
             
-            if (!gameId || !playerName) {
-                alert('Per favore, inserisci sia l\'ID della partita che il tuo nome.');
+            if (!playerName || !gameCode) {
+                alert('Per favore, inserisci il tuo nome e il codice della partita!');
                 return;
             }
             
-            const game = DB.getGame(gameId);
-            if (!game) {
-                alert('Partita non trovata. Verifica l\'ID e riprova.');
-                return;
-            }
-
-            if (game.status !== 'waiting') {
-                alert('Questa partita è già iniziata o conclusa.');
-                return;
-            }
+            // In a real implementation, you would check if the game exists on a server
+            // For this prototype, we'll just accept any code
+            gameState.gameId = gameCode;
+            gameState.isHost = false;
+            gameState.playerName = playerName;
+            gameState.playerColor = generateRandomColor();
             
-            game.players.push({
-                id: Date.now().toString(),
-                name: playerName,
-                isHost: false
-            });
+            // Simulate joining a game
+            gameState.players = [
+                {
+                    id: 'host_' + new Date().getTime(),
+                    name: 'Host (simulato)',
+                    color: generateRandomColor(),
+                    isHost: true
+                },
+                {
+                    id: 'player_' + new Date().getTime(),
+                    name: playerName,
+                    color: gameState.playerColor,
+                    isHost: false
+                }
+            ];
             
-            DB.updateGame(game);
+            gameState.questions = defaultQuestions;
             
-            appState.currentGameId = gameId;
-            appState.playerName = playerName;
-            appState.isHost = false;
-            
-            elements.currentGameId.textContent = gameId;
-            elements.gameIdDisplay.classList.remove('hidden');
+            // Show lobby
+            document.getElementById('game-code-display').textContent = gameState.gameId;
+            document.getElementById('game-link').textContent = `${window.location.href.split('?')[0]}?gameId=${gameState.gameId}`;
             
             updatePlayersList();
-            startPolling();
+            showSection('lobby');
         });
-
-        elements.startGame.addEventListener('click', function() {
-            if (!appState.isHost) return;
+        
+        // Update players list in lobby
+        function updatePlayersList() {
+            const playersListElement = document.getElementById('players-list');
+            playersListElement.innerHTML = '';
             
-            const game = DB.getGame(appState.currentGameId);
-            if (game.players.length < 2) {
-                alert('Servono almeno 2 giocatori per iniziare.');
+            gameState.players.forEach(player => {
+                const playerItem = document.createElement('div');
+                playerItem.className = 'player-item';
+                
+                const colorSpan = document.createElement('span');
+                colorSpan.className = 'player-color';
+                colorSpan.style.backgroundColor = player.color;
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = player.name + (player.isHost ? ' (Host)' : '');
+                
+                playerItem.appendChild(colorSpan);
+                playerItem.appendChild(nameSpan);
+                
+                playersListElement.appendChild(playerItem);
+            });
+        }
+        
+        // Copy game link functionality
+        document.getElementById('copy-link').addEventListener('click', function() {
+            const gameLink = document.getElementById('game-link').textContent;
+            navigator.clipboard.writeText(gameLink).then(() => {
+                alert('Link copiato negli appunti!');
+            });
+        });
+        
+        // Leave game functionality
+        document.getElementById('leave-game').addEventListener('click', function() {
+            if (confirm('Sei sicuro di voler abbandonare la partita?')) {
+                gameState = {
+                    gameId: null,
+                    isHost: false,
+                    playerName: '',
+                    playerColor: '',
+                    players: [],
+                    questions: [],
+                    currentRound: 0,
+                    currentPlayerIndex: 0,
+                    stories: [],
+                    gameStarted: false
+                };
+                showSection('home');
+            }
+        });
+        
+        // Start round functionality
+        document.getElementById('start-round').addEventListener('click', function() {
+            if (gameState.players.length < 2) {
+                alert('Aspetta che si uniscano altri giocatori prima di iniziare!');
                 return;
             }
             
-            game.status = 'playing';
-            DB.updateGame(game);
+            // Initialize stories array
+            gameState.stories = gameState.players.map(player => ({
+                playerId: player.id,
+                entries: []
+            }));
+            
+            gameState.gameStarted = true;
+            gameState.currentRound = 0;
+            gameState.currentPlayerIndex = 0;
+            
+            // Start the first round
+            startRound();
         });
-
-        elements.submitAnswer.addEventListener('click', function() {
-            const answer = elements.playerAnswer.value.trim();
-            if (!answer) {
-                alert('Per favore, scrivi una risposta.');
+        
+        function startRound() {
+            // In a real implementation, you would notify all players
+            // For this prototype, we'll just simulate the game flow
+            
+            const currentPlayerId = gameState.players[gameState.currentPlayerIndex].id;
+            const currentPlayerName = gameState.players[gameState.currentPlayerIndex].name;
+            
+            // Check if this is your turn
+            const isYourTurn = currentPlayerName === gameState.playerName;
+            
+            if (isYourTurn) {
+                // Setup gameplay screen
+                document.getElementById('current-prompt').textContent = gameState.questions[gameState.currentRound];
+                document.getElementById('previous-entries').innerHTML = '';
+                document.getElementById('player-entry').value = '';
+                showSection('gameplay');
+            } else {
+                // Show waiting screen
+                document.getElementById('current-player-info').textContent = `${currentPlayerName} sta scrivendo...`;
+                showSection('waiting');
+                
+                // Simulate other player's turn
+                if (!gameState.isHost) {
+                    setTimeout(() => {
+                        simulateOtherPlayerTurn();
+                    }, 2000 + Math.random() * 3000);
+                }
+            }
+        }
+        
+        // Submit entry functionality
+        document.getElementById('submit-entry').addEventListener('click', function() {
+            const entry = document.getElementById('player-entry').value.trim();
+            
+            if (!entry) {
+                alert('Per favore, scrivi qualcosa prima di inviare!');
                 return;
             }
             
-            const game = DB.getGame(appState.currentGameId);
-            if (!game) return;
+            // Save entry to the current story
+            const storyIndex = gameState.currentPlayerIndex;
+            gameState.stories[storyIndex].entries.push({
+                question: gameState.questions[gameState.currentRound],
+                answer: entry,
+                playerId: gameState.players[gameState.currentPlayerIndex].id
+            });
             
-            // Inizializza la struttura per le risposte del giocatore se non esiste
-            if (!game.answers[appState.playerName]) {
-                game.answers[appState.playerName] = Array(game.prompts.length).fill('');
-            }
-            
-            // Salva la risposta
-            game.answers[appState.playerName][game.currentRound] = answer;
-            
-            DB.updateGame(game);
-            
-            elements.playerAnswer.value = '';
-            elements.playerAnswer.disabled = true;
-            elements.submitAnswer.disabled = true;
-            elements.waitingForOthers.classList.remove('hidden');
+            // Move to next player or next round
+            moveToNextTurn();
         });
-
-        elements.playAgain.addEventListener('click', function() {
-            // Resetta lo stato
-            clearInterval(appState.interval);
-            appState = {
-                currentGameId: null,
-                playerName: '',
-                isHost: false,
-                currentPromptIndex: 0,
-                interval: null
-            };
+        
+        function moveToNextTurn() {
+            gameState.currentPlayerIndex++;
             
-            // Torna alla schermata iniziale
-            elements.results.classList.add('hidden');
-            elements.setup.classList.remove('hidden');
-            elements.gameId.value = '';
-            elements.startGame.classList.add('hidden');
-            elements.gameIdDisplay.classList.add('hidden');
-            elements.playersList.innerHTML = '';
-        });
-
-        // Funzioni di utilità
-        function startPolling() {
-            if (appState.interval) clearInterval(appState.interval);
-            
-            appState.interval = setInterval(function() {
-                const game = DB.getGame(appState.currentGameId);
-                if (!game) {
-                    clearInterval(appState.interval);
-                    alert('La partita non esiste più.');
+            // If all players have taken their turn, move to next round
+            if (gameState.currentPlayerIndex >= gameState.players.length) {
+                gameState.currentPlayerIndex = 0;
+                gameState.currentRound++;
+                
+                // If all rounds are completed, show results
+                if (gameState.currentRound >= gameState.questions.length) {
+                    showResults();
                     return;
                 }
-                
-                updatePlayersList();
-                
-                if (game.status === 'playing') {
-                    handleGameState(game);
-                } else if (game.status === 'completed') {
-                    showResults(game);
-                }
-            }, 1000);
-        }
-
-        function updatePlayersList() {
-            const game = DB.getGame(appState.currentGameId);
-            if (!game) return;
-            
-            elements.playersList.innerHTML = '';
-            game.players.forEach(player => {
-                const li = document.createElement('li');
-                li.textContent = player.name + (player.isHost ? ' (Host)' : '');
-                elements.playersList.appendChild(li);
-            });
-        }
-
-        function handleGameState(game) {
-            // Passa alla sezione di gioco
-            elements.setup.classList.add('hidden');
-            elements.game.classList.remove('hidden');
-            
-            // Aggiorna l'indicatore di progresso
-            updateProgressIndicator(game);
-            
-            // Controlla se la partita è finita
-            if (game.currentRound >= game.prompts.length) {
-                finishGame(game);
-                return;
             }
             
-            // Controlla se il giocatore ha già risposto
-            const playerAnswers = game.answers[appState.playerName] || [];
-            if (playerAnswers[game.currentRound]) {
-                // Il giocatore ha già risposto
-                elements.promptContainer.textContent = game.prompts[game.currentRound];
-                elements.playerAnswer.disabled = true;
-                elements.submitAnswer.disabled = true;
-                elements.waitingForOthers.classList.remove('hidden');
-            } else {
-                // Il giocatore deve ancora rispondere
-                elements.promptContainer.textContent = game.prompts[game.currentRound];
-                elements.playerAnswer.disabled = false;
-                elements.submitAnswer.disabled = false;
-                elements.waitingForOthers.classList.add('hidden');
-            }
-            
-            // Controlla se tutti hanno risposto per questo round
-            const allAnswered = Object.keys(game.answers).length === game.players.length &&
-                                Object.values(game.answers).every(answers => answers[game.currentRound]);
-            
-            if (allAnswered && appState.isHost) {
-                // Avanza al prossimo round
-                game.currentRound++;
-                DB.updateGame(game);
-            }
+            // Start next turn
+            startRound();
         }
-
-        function updateProgressIndicator(game) {
-            elements.progressIndicator.innerHTML = '';
+        
+        function simulateOtherPlayerTurn() {
+            const fakeAnswers = [
+                "Il presidente della Repubblica",
+                "Una bellissima ballerina",
+                "Un cane parlante",
+                "Un alieno verde",
+                "Con il suo migliore amico",
+                "Con una strega",
+                "Con un calciatore famoso",
+                "Al supermercato",
+                "Sulla luna",
+                "In una caverna segreta",
+                "In una biblioteca deserta",
+                "Stavano ballando il tango",
+                "Preparavano una pozione magica",
+                "Discutevano di filosofia",
+                "Ti ho sempre amato in segreto",
+                "Che bel tempo oggi, vero?",
+                "Posso prendere in prestito la tua astronave?",
+                "Mi dispiace, sono allergico alle tue bugie",
+                "Non mangio mai prima di mezzanotte",
+                "Solo se mi compri un gelato",
+                "Tutti si misero a ridere",
+                "Il mondo esplose in mille pezzi",
+                "Decisero di adottare un pinguino",
+                "Da quel giorno nessuno li ha più visti"
+            ];
             
-            for (let i = 0; i < game.prompts.length; i++) {
-                const stepDiv = document.createElement('div');
-                stepDiv.className = 'progress-step';
-                
-                if (i < game.currentRound) {
-                    stepDiv.classList.add('completed');
-                } else if (i === game.currentRound) {
-                    stepDiv.classList.add('active');
-                }
-                
-                const stepNumber = document.createElement('div');
-                stepNumber.className = 'step-number';
-                stepNumber.textContent = i + 1;
-                
-                stepDiv.appendChild(stepNumber);
-                elements.progressIndicator.appendChild(stepDiv);
-            }
-        }
-
-        function finishGame(game) {
-            game.status = 'completed';
-            
-            // Genera le storie
-            game.stories = [];
-            
-            // Per ogni giocatore, crea una storia
-            game.players.forEach((player, index) => {
-                let story = [];
-                
-                // Per ogni prompt, prendi la risposta ruotando i giocatori
-                for (let i = 0; i < game.prompts.length; i++) {
-                    // Calcola quale giocatore ha risposto in questo turno per questa storia
-                    const respondingPlayerIndex = (index + i) % game.players.length;
-                    const respondingPlayer = game.players[respondingPlayerIndex].name;
-                    
-                    // Prendi la risposta
-                    const response = game.answers[respondingPlayer][i];
-                    
-                    story.push({
-                        prompt: game.prompts[i],
-                        answer: response,
-                        player: respondingPlayer
-                    });
-                }
-                
-                game.stories.push({
-                    player: player.name,
-                    story: story
-                });
+            // Save fake entry to the current story
+            const storyIndex = gameState.currentPlayerIndex;
+            gameState.stories[storyIndex].entries.push({
+                question: gameState.questions[gameState.currentRound],
+                answer: fakeAnswers[Math.floor(Math.random() * fakeAnswers.length)],
+                playerId: gameState.players[gameState.currentPlayerIndex].id
             });
             
-            DB.updateGame(game);
-            showResults(game);
+            // Move to next turn
+            moveToNextTurn();
         }
-
-        function showResults(game) {
-            clearInterval(appState.interval);
+        
+        function showResults() {
+            const storiesContainer = document.getElementById('stories-container');
+            storiesContainer.innerHTML = '';
             
-            elements.setup.classList.add('hidden');
-            elements.game.classList.add('hidden');
-            elements.results.classList.remove('hidden');
-            
-            elements.storiesContainer.innerHTML = '';
-            
-            game.stories.forEach(storyData => {
+            // Process each story (folded paper) to create the final stories
+            gameState.stories.forEach((story, index) => {
                 const storyDiv = document.createElement('div');
-                storyDiv.className = 'story-container';
+                storyDiv.className = 'results';
                 
-                const storyTitle = document.createElement('h3');
-                storyTitle.textContent = 'Storia di ' + storyData.player;
-                storyDiv.appendChild(storyTitle);
+                // Create story title (each paper belongs to a player)
+                const playerName = gameState.players[index].name;
+                const playerColor = gameState.players[index].color;
                 
-                const storySummary = document.createElement('p');
-                let summaryText = '';
-                storyData.story.forEach(item => {
-                    summaryText += item.answer + ' ';
-                });
-                storySummary.textContent = summaryText.trim();
-                storyDiv.appendChild(storySummary);
+                const titleDiv = document.createElement('h3');
+                titleDiv.textContent = `Storia di ${playerName}`;
+                titleDiv.style.color = playerColor;
+                storyDiv.appendChild(titleDiv);
                 
-                const storyDetails = document.createElement('div');
-                storyDetails.className = 'story-details';
-                
-                storyData.story.forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'story-item';
+                // Create the full story text
+                let storyText = '';
+                story.entries.forEach((entry, i) => {
+                    const contributorName = gameState.players.find(p => p.id === entry.playerId)?.name || 'Sconosciuto';
+                    const contributorColor = gameState.players.find(p => p.id === entry.playerId)?.color || '#000';
                     
-                    const promptSpan = document.createElement('strong');
-                    promptSpan.textContent = item.prompt + ' ';
-                    
-                    const answerSpan = document.createElement('span');
-                    answerSpan.textContent = item.answer + ' ';
-                    
-                    const playerSpan = document.createElement('em');
-                    playerSpan.textContent = '(da ' + item.player + ')';
-                    
-                    itemDiv.appendChild(promptSpan);
-                    itemDiv.appendChild(answerSpan);
-                    itemDiv.appendChild(playerSpan);
-                    
-                    storyDetails.appendChild(itemDiv);
+                    storyText += `<div class="entry" style="border-left: 3px solid ${contributorColor}">`;
+                    storyText += `<strong>${entry.question}</strong><br>`;
+                    storyText += `${entry.answer} <em>(scritto da ${contributorName})</em>`;
+                    storyText += `</div>`;
                 });
                 
-                storyDiv.appendChild(storyDetails);
-                elements.storiesContainer.appendChild(storyDiv);
+                // Create a readable version of the story
+                const readableStoryDiv = document.createElement('div');
+                readableStoryDiv.innerHTML = `<h4>La storia completa:</h4>`;
+                
+                const storyParagraph = document.createElement('p');
+                const readableStory = story.entries.map(entry => entry.answer).join(' ');
+                storyParagraph.textContent = readableStory;
+                
+                readableStoryDiv.appendChild(storyParagraph);
+                
+                // Add both versions to the container
+                const entriesDiv = document.createElement('div');
+                entriesDiv.innerHTML = storyText;
+                storyDiv.appendChild(entriesDiv);
+                storyDiv.appendChild(document.createElement('hr'));
+                storyDiv.appendChild(readableStoryDiv);
+                
+                storiesContainer.appendChild(storyDiv);
             });
+            
+            showSection('results');
         }
+        
+        // Play again functionality
+        document.getElementById('play-again').addEventListener('click', function() {
+            if (gameState.isHost) {
+                // Reset game state for a new round but keep players
+                gameState.currentRound = 0;
+                gameState.currentPlayerIndex = 0;
+                gameState.stories = [];
+                gameState.gameStarted = false;
+                
+                // Show lobby
+                showSection('lobby');
+            } else {
+                alert('Solo l\'host può avviare una nuova partita!');
+            }
+        });
+        
+        // New game functionality
+        document.getElementById('new-game').addEventListener('click', function() {
+            // Reset all game state
+            gameState = {
+                gameId: null,
+                isHost: false,
+                playerName: '',
+                playerColor: '',
+                players: [],
+                questions: [],
+                currentRound: 0,
+                currentPlayerIndex: 0,
+                stories: [],
+                gameStarted: false
+            };
+            
+            // Go back to home
+            showSection('home');
+        });
+        
+        // Check URL for game code on page load
+        function checkUrlForGameCode() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('gameId');
+            
+            if (gameId) {
+                document.getElementById('game-code').value = gameId;
+                showSection('joinGame');
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', function() {
+            checkUrlForGameCode();
+        });
     </script>
 </body>
 </html>
