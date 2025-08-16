@@ -2,815 +2,392 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gioco della Sigaretta</title>
-    <!-- Firebase SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-auth-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Logic Labyrinth</title>
     <style>
-        :root {
-            --primary-color: #ff6b6b;
-            --secondary-color: #4ecdc4;
-            --bg-color: #f7fff7;
-            --text-color: #2d3142;
-            --fold-color: #ffe66d;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            font-family: sans-serif;
+            text-align: center;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
-        
-        header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 2rem;
-            flex: 1;
-        }
-        
-        .game-section {
-            background-color: white;
-            border-radius: 10px;
-            padding: 2rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
-        }
-        
-        h1, h2, h3 {
-            margin-top: 0;
-        }
-        
-        input, button, select {
-            padding: 0.75rem;
-            border-radius: 5px;
-            border: 1px solid #ddd;
-            font-size: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        button {
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        
-        button:hover {
-            background-color: #3db8af;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .paper-strip {
-            background-color: white;
-            border: 1px solid #ddd;
-            padding: 1rem;
-            margin-top: 1rem;
-            border-radius: 5px;
+
+        #game-container {
             position: relative;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 95vmin;
+            height: 95vmin;
+            border: 2px solid #6c63ff;
+            background-color: #2e2e4a;
+            box-shadow: 0 0 15px rgba(108, 99, 255, 0.5);
+            margin: auto;
         }
-        
-        .fold-line {
-            border-top: 2px dashed var(--fold-color);
-            width: 100%;
-            margin: 1rem 0;
-        }
-        
-        .folded-section {
-            background-color: #f5f5f5;
-            color: #f5f5f5;
-            user-select: none;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-bottom: 0.5rem;
-            position: relative;
-        }
-        
-        .folded-section::after {
-            content: "Testo nascosto";
-            color: #aaa;
-            font-style: italic;
+
+        #player {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .player-color {
             width: 20px;
             height: 20px;
+            background-color: #ff5722;
             border-radius: 50%;
-            display: inline-block;
-            margin-right: 0.5rem;
-            vertical-align: middle;
+            transition: all 0.2s linear;
+        }
+
+        .wall {
+            position: absolute;
+            background-color: #6c63ff;
+        }
+
+        .goal {
+            position: absolute;
+            background-color: #4CAF50;
+            opacity: 0.8;
         }
         
-        .prompt {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-        
-        .results-container {
-            margin-top: 2rem;
-        }
-        
-        .story-result {
-            background-color: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: relative;
-        }
-        
-        .story-line {
-            padding: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-radius: 5px;
-        }
-        
-        .player-list {
-            margin-top: 1rem;
-        }
-        
-        .player-item {
-            padding: 0.5rem;
-            border-radius: 5px;
-            margin-bottom: 0.5rem;
-            display: flex;
+        #puzzle-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            z-index: 100;
         }
-        
-        .game-code {
-            font-size: 2rem;
-            font-weight: bold;
-            text-align: center;
-            margin: 1rem 0;
-            color: var(--primary-color);
+
+        #puzzle-box {
+            background-color: #2e2e4a;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #6c63ff;
+            width: 80%;
+            max-width: 400px;
         }
-        
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 2s linear infinite;
-            margin: 1rem auto;
+
+        #puzzle-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
         }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--secondary-color);
-            color: white;
-            padding: 1rem;
+
+        #puzzle-input {
+            width: 80%;
+            padding: 10px;
+            font-size: 1.2em;
             border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.3s;
+            border: 1px solid #6c63ff;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            margin-bottom: 10px;
+        }
+
+        #puzzle-submit {
+            background-color: #6c63ff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-areas: ". up ." "left . right" ". down .";
+            width: 180px;
         }
         
-        .toast.show {
-            opacity: 1;
+        .control-btn {
+            background-color: #6c63ff;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            margin: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
         }
-        
-        footer {
-            background-color: var(--text-color);
-            color: white;
-            text-align: center;
-            padding: 1rem;
-            margin-top: auto;
+
+        #up { grid-area: up; }
+        #left { grid-area: left; }
+        #right { grid-area: right; }
+        #down { grid-area: down; }
+
+        #title {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            font-size: 2em;
+            color: #6c63ff;
+            text-shadow: 2px 2px 4px #000;
         }
-        
-        @media (max-width: 600px) {
-            .container {
-                padding: 1rem;
-            }
-            
-            .game-section {
-                padding: 1rem;
-            }
-        }
+
     </style>
 </head>
 <body>
-    <header>
-        <h1>Gioco della Sigaretta</h1>
-    </header>
-    
-    <div class="container">
-        <!-- Home Page -->
-        <div id="home-section" class="game-section">
-            <h2>Benvenuto al Gioco della Sigaretta!</h2>
-            <p>Un gioco divertente dove creerete storie pazze insieme ai vostri amici.</p>
-            
-            <div class="options">
-                <button id="create-game-btn">Crea Nuova Partita</button>
-                <div class="or" style="text-align: center; margin: 1rem 0;">- OPPURE -</div>
-                <div>
-                    <input type="text" id="join-code" placeholder="Inserisci codice partita" maxlength="6">
-                    <button id="join-game-btn">Partecipa</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Lobby Page -->
-        <div id="lobby-section" class="game-section hidden">
-            <h2>Sala d'attesa</h2>
-            <p>Condividi questo codice con i tuoi amici per farli partecipare:</p>
-            <div class="game-code" id="game-code-display">------</div>
-            
-            <div>
-                <p>Il tuo nome:</p>
-                <input type="text" id="player-name" placeholder="Inserisci il tuo nome">
-                <button id="set-name-btn">Imposta Nome</button>
-            </div>
-            
-            <h3>Giocatori:</h3>
-            <div id="players-list" class="player-list"></div>
-            
-            <div id="host-controls" class="hidden">
-                <p>Impostazioni di gioco:</p>
-                <select id="num-prompts">
-                    <option value="5">5 prompt</option>
-                    <option value="6">6 prompt</option>
-                    <option value="7" selected>7 prompt</option>
-                    <option value="8">8 prompt</option>
-                </select>
-                <button id="start-game-btn" disabled>Inizia Partita (min. 3 giocatori)</button>
-            </div>
-        </div>
-        
-        <!-- Game Page -->
-        <div id="game-section" class="game-section hidden">
-            <h2>Turno <span id="current-round">1</span> di <span id="total-rounds">7</span></h2>
-            
-            <div id="waiting-message" class="hidden">
-                <p>In attesa che gli altri giocatori completino il turno...</p>
-                <div class="loader"></div>
-            </div>
-            
-            <div id="game-prompt" class="hidden">
-                <div class="prompt" id="prompt-text">Chi?</div>
-                <div class="paper-strip" id="paper-strip">
-                    <div id="folded-sections"></div>
-                    <textarea id="answer-input" rows="2" placeholder="Scrivi qui la tua risposta..."></textarea>
-                    <button id="submit-answer-btn">Invia e Piega</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Results Page -->
-        <div id="results-section" class="game-section hidden">
-            <h2>Risultati</h2>
-            <p>Ecco le storie pazze che avete creato!</p>
-            <div id="results-container" class="results-container"></div>
-            <button id="new-game-btn">Nuova Partita</button>
+
+    <div id="game-container">
+        <div id="player"></div>
+    </div>
+
+    <div id="puzzle-overlay">
+        <div id="puzzle-box">
+            <p id="puzzle-text"></p>
+            <input type="text" id="puzzle-input" placeholder="La tua risposta">
+            <button id="puzzle-submit">Invia</button>
         </div>
     </div>
-    
-    <div id="toast" class="toast"></div>
-    
-    <footer>
-        <p>Gioco della Sigaretta © 2025</p>
-    </footer>
+
+    <div id="controls">
+        <button id="up" class="control-btn">⬆️</button>
+        <button id="left" class="control-btn">⬅️</button>
+        <button id="right" class="control-btn">➡️</button>
+        <button id="down" class="control-btn">⬇️</button>
+    </div>
 
     <script>
-        // Firebase configuration
-        // IMPORTANTE: Dovrai sostituire questi valori con quelli del tuo progetto Firebase
-        const firebaseConfig = {
-            apiKey: "INSERISCI_API_KEY_QUI",
-            authDomain: "tuo-progetto.firebaseapp.com",
-            databaseURL: "https://tuo-progetto-default-rtdb.firebaseio.com",
-            projectId: "tuo-progetto",
-            storageBucket: "tuo-progetto.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abc123def456"
-        };
-        
-        // Inizializza Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        
-        // DOM Elements
-        const homeSection = document.getElementById('home-section');
-        const lobbySection = document.getElementById('lobby-section');
-        const gameSection = document.getElementById('game-section');
-        const resultsSection = document.getElementById('results-section');
-        
-        const createGameBtn = document.getElementById('create-game-btn');
-        const joinGameBtn = document.getElementById('join-game-btn');
-        const joinCodeInput = document.getElementById('join-code');
-        const gameCodeDisplay = document.getElementById('game-code-display');
-        
-        const playerNameInput = document.getElementById('player-name');
-        const setNameBtn = document.getElementById('set-name-btn');
-        const playersList = document.getElementById('players-list');
-        const hostControls = document.getElementById('host-controls');
-        const startGameBtn = document.getElementById('start-game-btn');
-        const numPromptsSelect = document.getElementById('num-prompts');
-        
-        const currentRoundSpan = document.getElementById('current-round');
-        const totalRoundsSpan = document.getElementById('total-rounds');
-        const waitingMessage = document.getElementById('waiting-message');
-        const gamePrompt = document.getElementById('game-prompt');
-        const promptText = document.getElementById('prompt-text');
-        const foldedSections = document.getElementById('folded-sections');
-        const answerInput = document.getElementById('answer-input');
-        const submitAnswerBtn = document.getElementById('submit-answer-btn');
-        
-        const resultsContainer = document.getElementById('results-container');
-        const newGameBtn = document.getElementById('new-game-btn');
-        
-        const toast = document.getElementById('toast');
-        
-        // Game state
-        let gameId = null;
-        let playerId = null;
-        let playerName = '';
-        let isHost = false;
-        let currentRound = 0;
-        let totalRounds = 7;
-        let playerColors = {};
-        let papers = [];
-        
-        // Prompts for each round
-        const defaultPrompts = [
-            "Chi?",
-            "Con chi?",
-            "Dove?",
-            "Cosa fa?",
-            "Chi dice?",
-            "Cosa dice?",
-            "Cosa succede dopo?"
-        ];
-        
-        // Generate a random 6-character game code
-        function generateGameCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 6; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
-        
-        // Generate a random color for player
-        function generatePlayerColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return `hsl(${hue}, 70%, 60%)`;
-        }
-        
-        // Show toast message
-        function showToast(message, duration = 3000) {
-            toast.textContent = message;
-            toast.classList.add('show');
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.getElementById('game-container');
+            const player = document.getElementById('player');
+            const puzzleOverlay = document.getElementById('puzzle-overlay');
+            const puzzleText = document.getElementById('puzzle-text');
+            const puzzleInput = document.getElementById('puzzle-input');
+            const puzzleSubmit = document.getElementById('puzzle-submit');
             
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, duration);
-        }
-        
-        // Set player ID in local storage
-        function setPlayerId() {
-            if (!localStorage.getItem('sigarettaPlayerId')) {
-                const newPlayerId = Math.random().toString(36).substring(2, 15);
-                localStorage.setItem('sigarettaPlayerId', newPlayerId);
-            }
-            playerId = localStorage.getItem('sigarettaPlayerId');
-        }
-        
-        // Create a new game
-        createGameBtn.addEventListener('click', () => {
-            setPlayerId();
+            const gridSize = 10;
+            const cellSize = gameContainer.clientWidth / gridSize;
+            let playerX = 0;
+            let playerY = 0;
             
-            gameId = generateGameCode();
-            isHost = true;
-            
-            // Create game in Firebase
-            database.ref(`games/${gameId}`).set({
-                status: 'lobby',
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                hostId: playerId
-            }).then(() => {
-                gameCodeDisplay.textContent = gameId;
-                hostControls.classList.remove('hidden');
+            let currentPuzzle = {};
+            let currentLevel = 1;
+            let maze = [];
+
+            // Aggiungo i controlli per il touch
+            document.getElementById('up').addEventListener('click', () => movePlayer('up'));
+            document.getElementById('down').addEventListener('click', () => movePlayer('down'));
+            document.getElementById('left').addEventListener('click', () => movePlayer('left'));
+            document.getElementById('right').addEventListener('click', () => movePlayer('right'));
+
+            function createMaze(size) {
+                const maze = Array(size).fill(null).map(() => Array(size).fill(1));
                 
-                // Navigate to lobby
-                homeSection.classList.add('hidden');
-                lobbySection.classList.remove('hidden');
-                
-                // Listen for player changes
-                listenForPlayers();
-            }).catch(error => {
-                console.error("Error creating game:", error);
-                showToast("Errore nella creazione della partita. Riprova.");
-            });
-        });
-        
-        // Join an existing game
-        joinGameBtn.addEventListener('click', () => {
-            const code = joinCodeInput.value.toUpperCase().trim();
-            
-            if (code.length !== 6) {
-                showToast("Codice partita non valido");
-                return;
-            }
-            
-            setPlayerId();
-            
-            // Check if game exists
-            database.ref(`games/${code}`).once('value').then(snapshot => {
-                const gameData = snapshot.val();
-                
-                if (!gameData) {
-                    showToast("Partita non trovata");
-                    return;
-                }
-                
-                if (gameData.status !== 'lobby') {
-                    showToast("Questa partita è già iniziata");
-                    return;
-                }
-                
-                gameId = code;
-                isHost = (gameData.hostId === playerId);
-                
-                if (isHost) {
-                    hostControls.classList.remove('hidden');
-                }
-                
-                gameCodeDisplay.textContent = gameId;
-                
-                // Navigate to lobby
-                homeSection.classList.add('hidden');
-                lobbySection.classList.remove('hidden');
-                
-                // Listen for player changes
-                listenForPlayers();
-            }).catch(error => {
-                console.error("Error joining game:", error);
-                showToast("Errore nel partecipare alla partita");
-            });
-        });
-        
-        // Set player name
-        setNameBtn.addEventListener('click', () => {
-            const name = playerNameInput.value.trim();
-            
-            if (name.length < 2) {
-                showToast("Il nome deve avere almeno 2 caratteri");
-                return;
-            }
-            
-            playerName = name;
-            
-            // Add player to game
-            database.ref(`games/${gameId}/players/${playerId}`).set({
-                name: playerName,
-                color: generatePlayerColor(),
-                joinedAt: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                playerNameInput.disabled = true;
-                setNameBtn.disabled = true;
-                showToast("Nome impostato con successo!");
-            }).catch(error => {
-                console.error("Error setting name:", error);
-                showToast("Errore nell'impostazione del nome");
-            });
-        });
-        
-        // Listen for players in the lobby
-        function listenForPlayers() {
-            database.ref(`games/${gameId}/players`).on('value', snapshot => {
-                const players = snapshot.val() || {};
-                const playerIds = Object.keys(players);
-                
-                // Update players list
-                playersList.innerHTML = '';
-                playerColors = {};
-                
-                playerIds.forEach(pid => {
-                    const player = players[pid];
-                    playerColors[pid] = player.color;
-                    
-                    const playerItem = document.createElement('div');
-                    playerItem.className = 'player-item';
-                    
-                    const colorDot = document.createElement('div');
-                    colorDot.className = 'player-color';
-                    colorDot.style.backgroundColor = player.color;
-                    
-                    const playerNameSpan = document.createElement('span');
-                    playerNameSpan.textContent = player.name + (pid === playerId ? ' (Tu)' : '') + (pid === snapshot.val().hostId ? ' (Host)' : '');
-                    
-                    playerItem.appendChild(colorDot);
-                    playerItem.appendChild(playerNameSpan);
-                    playersList.appendChild(playerItem);
-                });
-                
-                // Update start button state
-                if (isHost) {
-                    startGameBtn.disabled = playerIds.length < 2; // Per test: almeno 2 giocatori invece di 3
-                }
-            });
-            
-            // Listen for game status changes
-            database.ref(`games/${gameId}/status`).on('value', snapshot => {
-                const status = snapshot.val();
-                
-                if (status === 'playing') {
-                    lobbySection.classList.add('hidden');
-                    gameSection.classList.remove('hidden');
-                    
-                    // Get game settings
-                    database.ref(`games/${gameId}/settings`).once('value').then(settingsSnapshot => {
-                        const settings = settingsSnapshot.val() || {};
-                        totalRounds = settings.numPrompts || 7;
-                        totalRoundsSpan.textContent = totalRounds;
-                        
-                        // Initialize game
-                        listenForRound();
-                    });
-                } else if (status === 'completed') {
-                    gameSection.classList.add('hidden');
-                    resultsSection.classList.remove('hidden');
-                    showResults();
-                }
-            });
-        }
-        
-        // Start the game
-        startGameBtn.addEventListener('click', () => {
-            if (!isHost) return;
-            
-            const numPrompts = parseInt(numPromptsSelect.value);
-            let prompts = defaultPrompts.slice(0, numPrompts);
-            
-            // Get player IDs in order
-            database.ref(`games/${gameId}/players`).once('value').then(snapshot => {
-                const players = snapshot.val() || {};
-                const playerIds = Object.keys(players);
-                
-                // Create paper assignments
-                const papers = playerIds.map((pid, index) => {
-                    return {
-                        id: `paper_${index}`,
-                        currentPlayer: pid,
-                        rounds: []
-                    };
-                });
-                
-                // Update game state
-                database.ref(`games/${gameId}`).update({
-                    status: 'playing',
-                    currentRound: 1,
-                    settings: {
-                        numPrompts: numPrompts,
-                        prompts: prompts
-                    },
-                    papers: papers
-                }).then(() => {
-                    // Game started successfully
-                }).catch(error => {
-                    console.error("Error starting game:", error);
-                    showToast("Errore nell'avvio della partita");
-                });
-            });
-        });
-        
-        // Listen for current round
-        function listenForRound() {
-            database.ref(`games/${gameId}/currentRound`).on('value', snapshot => {
-                currentRound = snapshot.val() || 1;
-                currentRoundSpan.textContent = currentRound;
-                
-                if (currentRound > totalRounds) {
-                    // Game is complete
-                    database.ref(`games/${gameId}`).update({
-                        status: 'completed'
-                    });
-                    return;
-                }
-                
-                // Get current paper assignment
-                database.ref(`games/${gameId}/papers`).once('value').then(papersSnapshot => {
-                    const allPapers = papersSnapshot.val() || [];
-                    papers = allPapers;
-                    
-                    // Find paper assigned to this player
-                    const myPaper = allPapers.find(paper => paper.currentPlayer === playerId);
-                    
-                    if (myPaper) {
-                        // Show prompt for this round
-                        database.ref(`games/${gameId}/settings/prompts`).once('value').then(promptsSnapshot => {
-                            const prompts = promptsSnapshot.val() || defaultPrompts;
-                            const roundPrompt = prompts[currentRound - 1] || `Prompt ${currentRound}`;
-                            
-                            promptText.textContent = roundPrompt;
-                            waitingMessage.classList.add('hidden');
-                            gamePrompt.classList.remove('hidden');
-                            
-                            // Show folded sections
-                            foldedSections.innerHTML = '';
-                            if (myPaper.rounds && myPaper.rounds.length > 0) {
-                                myPaper.rounds.forEach((round, index) => {
-                                    const foldedSection = document.createElement('div');
-                                    foldedSection.className = 'folded-section';
-                                    foldedSection.textContent = round.answer;
-                                    foldedSections.appendChild(foldedSection);
-                                });
-                                
-                                if (myPaper.rounds.length > 0) {
-                                    const foldLine = document.createElement('div');
-                                    foldLine.className = 'fold-line';
-                                    foldedSections.appendChild(foldLine);
-                                }
-                            }
-                            
-                            // Clear input
-                            answerInput.value = '';
-                        });
-                    } else {
-                        // Wait for other players
-                        gamePrompt.classList.add('hidden');
-                        waitingMessage.classList.remove('hidden');
+                function carve(x, y) {
+                    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+                    directions.sort(() => Math.random() - 0.5);
+
+                    for (const [dx, dy] of directions) {
+                        const nx = x + dx * 2;
+                        const ny = y + dy * 2;
+
+                        if (nx >= 0 && nx < size && ny >= 0 && ny < size && maze[ny][nx] === 1) {
+                            maze[y + dy][x + dx] = 0;
+                            maze[ny][nx] = 0;
+                            carve(nx, ny);
+                        }
                     }
-                });
-            });
-        }
-        
-        // Submit answer for current round
-        submitAnswerBtn.addEventListener('click', () => {
-            const answer = answerInput.value.trim();
-            
-            if (!answer) {
-                showToast("Inserisci una risposta");
-                return;
-            }
-            
-            // Find current paper
-            const myPaper = papers.find(paper => paper.currentPlayer === playerId);
-            
-            if (!myPaper) {
-                showToast("Errore: Carta non trovata");
-                return;
-            }
-            
-            // Add answer to paper
-            database.ref(`games/${gameId}/settings/prompts`).once('value').then(promptsSnapshot => {
-                const prompts = promptsSnapshot.val() || defaultPrompts;
-                const roundPrompt = prompts[currentRound - 1] || `Prompt ${currentRound}`;
+                }
+
+                maze[1][1] = 0;
+                carve(1, 1);
                 
-                const roundData = {
-                    round: currentRound,
-                    prompt: roundPrompt,
-                    answer: answer,
-                    playerId: playerId
-                };
+                // Crea il percorso da inizio a fine
+                const path = new Array(size * size).fill(null).map(() => null);
+                const start = 1 * size + 1;
+                const end = (size - 2) * size + (size - 2);
                 
-                const paperRef = database.ref(`games/${gameId}/papers/${papers.indexOf(myPaper)}`);
-                
-                // Add round data
-                paperRef.child('rounds').child(currentRound - 1).set(roundData).then(() => {
-                    // Determine next player
-                    database.ref(`games/${gameId}/players`).once('value').then(playersSnapshot => {
-                        const players = playersSnapshot.val() || {};
-                        const playerIds = Object.keys(players);
+                function findPath(pos) {
+                    const x = pos % size;
+                    const y = Math.floor(pos / size);
+                    if (pos === end) return true;
+                    
+                    const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+                    directions.sort(() => Math.random() - 0.5);
+                    
+                    for (const [dx, dy] of directions) {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        const npos = ny * size + nx;
                         
-                        // Rotate papers (pass to next player)
-                        const currentIndex = playerIds.indexOf(playerId);
-                        const nextIndex = (currentIndex + 1) % playerIds.length;
-                        const nextPlayerId = playerIds[nextIndex];
-                        
-                        // Update paper assignment
-                        paperRef.update({
-                            currentPlayer: nextPlayerId
-                        }).then(() => {
-                            // Check if all players have submitted for this round
-                            checkRoundCompletion();
-                            
-                            // Show waiting message
-                            gamePrompt.classList.add('hidden');
-                            waitingMessage.classList.remove('hidden');
-                        });
+                        if (nx >= 0 && nx < size && ny >= 0 && ny < size && maze[ny][nx] === 0 && path[npos] === null) {
+                            path[npos] = pos;
+                            if (findPath(npos)) return true;
+                        }
+                    }
+                    return false;
+                }
+                
+                findPath(start);
+
+                // Aggiungi un puzzle ogni tot passi
+                let current = end;
+                let steps = 0;
+                while (current !== start) {
+                    steps++;
+                    if (steps % 5 === 0) { // Un puzzle ogni 5 celle
+                         const x = current % size;
+                         const y = Math.floor(current / size);
+                         if (x > 0 && y > 0 && x < size -1 && y < size - 1) {
+                             maze[y][x] = 2; // 2 = puzzle
+                         }
+                    }
+                    current = path[current];
+                }
+                
+                maze[1][1] = 0; // Punto di partenza libero
+                maze[size - 2][size - 2] = 3; // 3 = arrivo
+                return maze;
+            }
+
+            function drawMaze() {
+                gameContainer.innerHTML = '';
+                const cellSize = gameContainer.clientWidth / gridSize;
+                maze.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell === 1) {
+                            const wall = document.createElement('div');
+                            wall.className = 'wall';
+                            wall.style.left = `${x * cellSize}px`;
+                            wall.style.top = `${y * cellSize}px`;
+                            wall.style.width = `${cellSize}px`;
+                            wall.style.height = `${cellSize}px`;
+                            gameContainer.appendChild(wall);
+                        } else if (cell === 2) {
+                            const puzzleGoal = document.createElement('div');
+                            puzzleGoal.className = 'goal';
+                            puzzleGoal.style.left = `${x * cellSize}px`;
+                            puzzleGoal.style.top = `${y * cellSize}px`;
+                            puzzleGoal.style.width = `${cellSize}px`;
+                            puzzleGoal.style.height = `${cellSize}px`;
+                            gameContainer.appendChild(puzzleGoal);
+                        } else if (cell === 3) {
+                            const finishGoal = document.createElement('div');
+                            finishGoal.className = 'goal';
+                            finishGoal.style.left = `${x * cellSize}px`;
+                            finishGoal.style.top = `${y * cellSize}px`;
+                            finishGoal.style.width = `${cellSize}px`;
+                            finishGoal.style.height = `${cellSize}px`;
+                            finishGoal.style.backgroundColor = '#FFD700'; // Oro
+                            gameContainer.appendChild(finishGoal);
+                        }
                     });
                 });
-            });
-        });
-        
-        // Check if all players have completed the current round
-        function checkRoundCompletion() {
-            if (!isHost) return;
-            
-            database.ref(`games/${gameId}/papers`).once('value').then(papersSnapshot => {
-                const allPapers = papersSnapshot.val() || [];
-                const allCompleted = allPapers.every(paper => {
-                    return paper.rounds && paper.rounds.length >= currentRound;
-                });
-                
-                if (allCompleted) {
-                    // Advance to next round
-                    database.ref(`games/${gameId}`).update({
-                        currentRound: currentRound + 1
-                    });
+                updatePlayerPosition();
+            }
+
+            function updatePlayerPosition() {
+                const cellSize = gameContainer.clientWidth / gridSize;
+                player.style.left = `${playerX * cellSize}px`;
+                player.style.top = `${playerY * cellSize}px`;
+            }
+
+            function generatePuzzle(level) {
+                const type = Math.floor(Math.random() * 3);
+                let question, answer;
+
+                switch (type) {
+                    case 0: // Sequenza numerica
+                        const a = Math.floor(Math.random() * 5) + level;
+                        const b = Math.floor(Math.random() * 5) + level;
+                        const sequence = [a, a + b, a + b * 2, a + b * 3];
+                        question = `Qual è il prossimo numero in questa sequenza? ${sequence.join(', ')}, ?`;
+                        answer = a + b * 4;
+                        break;
+                    case 1: // Equazione semplice
+                        const op = ['+', '-', '*'][Math.floor(Math.random() * 3)];
+                        const num1 = Math.floor(Math.random() * 10) + level;
+                        const num2 = Math.floor(Math.random() * 10) + level;
+                        question = `Risolvi: ${num1} ${op} ${num2} = ?`;
+                        answer = eval(`${num1} ${op} ${num2}`);
+                        break;
+                    case 2: // Logica con simboli
+                        const shapes = ['▲', '■', '●', '★', '◆', '♥'];
+                        const ruleIndex = Math.floor(Math.random() * 2);
+                        const rule = ruleIndex === 0 ? 'Il prossimo simbolo è l\'opposto della posizione' : 'Ogni simbolo ripete il precedente';
+                        const startShape = shapes[Math.floor(Math.random() * shapes.length)];
+                        const nextShape = ruleIndex === 0 ? shapes[(shapes.indexOf(startShape) + 3) % shapes.length] : startShape;
+                        question = `Osserva la regola: ${rule}. Se il simbolo attuale è ${startShape}, qual è il prossimo? Usa il simbolo (ad es. '▲').`;
+                        answer = nextShape;
+                        break;
+                }
+                return { question, answer: String(answer).toLowerCase() };
+            }
+
+            function showPuzzle() {
+                currentPuzzle = generatePuzzle(currentLevel);
+                puzzleText.textContent = currentPuzzle.question;
+                puzzleInput.value = '';
+                puzzleOverlay.style.display = 'flex';
+            }
+
+            puzzleSubmit.addEventListener('click', () => {
+                const userAnswer = puzzleInput.value.trim().toLowerCase();
+                if (userAnswer === currentPuzzle.answer) {
+                    alert('Risposta corretta!');
+                    puzzleOverlay.style.display = 'none';
+                    // Sostituisci il muro con un percorso
+                    const x = playerX;
+                    const y = playerY;
+                    maze[y][x] = 0;
+                    drawMaze();
+                } else {
+                    alert('Risposta sbagliata, riprova.');
+                    puzzleInput.value = '';
                 }
             });
-        }
-        
-        // Show game results
-        function showResults() {
-            database.ref(`games/${gameId}`).once('value').then(snapshot => {
-                const gameData = snapshot.val();
-                const papers = gameData.papers || [];
-                const players = gameData.players || {};
+
+            function movePlayer(direction) {
+                let newX = playerX;
+                let newY = playerY;
+                const cellSize = gameContainer.clientWidth / gridSize;
                 
-                resultsContainer.innerHTML = '';
-                
-                papers.forEach((paper, paperIndex) => {
-                    const storyDiv = document.createElement('div');
-                    storyDiv.className = 'story-result';
-                    
-                    const rounds = paper.rounds || [];
-                    const storyTitle = document.createElement('h3');
-                    storyTitle.textContent = `Storia ${paperIndex + 1}`;
-                    storyDiv.appendChild(storyTitle);
-                    
-                    rounds.forEach(round => {
-                        const lineDiv = document.createElement('div');
-                        lineDiv.className = 'story-line';
-                        lineDiv.style.backgroundColor = `${playerColors[round.playerId]}20`; // 20 for transparency
-                        lineDiv.style.borderLeft = `4px solid ${playerColors[round.playerId]}`;
-                        
-                        const promptSpan = document.createElement('strong');
-                        promptSpan.textContent = round.prompt + ': ';
-                        
-                        const answerSpan = document.createElement('span');
-                        answerSpan.textContent = round.answer;
-                        
-                        lineDiv.appendChild(promptSpan);
-                        lineDiv.appendChild(answerSpan);
-                        storyDiv.appendChild(lineDiv);
-                    });
-                    
-                    resultsContainer.appendChild(storyDiv);
-                });
-            });
-        }
-        
-        // Start a new game
-        newGameBtn.addEventListener('click', () => {
-            resultsSection.classList.add('hidden');
-            homeSection.classList.remove('hidden');
-            
-            // Reset game state
-            database.ref(`games/${gameId}`).off();
-            gameId = null;
-            isHost = false;
-            currentRound = 0;
-            papers = [];
-            
-            // Reset UI
-            playerNameInput.disabled = false;
-            setNameBtn.disabled = false;
-            playerNameInput.value = playerName;
-            hostControls.classList.add('hidden');
-        });
-        
-        // Keyboard shortcut for submitting answer
-        answerInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                submitAnswerBtn.click();
+                switch (direction) {
+                    case 'up': newY--; break;
+                    case 'down': newY++; break;
+                    case 'left': newX--; break;
+                    case 'right': newX++; break;
+                }
+
+                if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
+                    const nextCell = maze[newY][newX];
+                    if (nextCell === 0) {
+                        playerX = newX;
+                        playerY = newY;
+                        updatePlayerPosition();
+                    } else if (nextCell === 2) { // Cella del puzzle
+                        playerX = newX;
+                        playerY = newY;
+                        updatePlayerPosition();
+                        showPuzzle();
+                    } else if (nextCell === 3) { // Cella di arrivo
+                        alert(`Congratulazioni! Hai completato il labirinto di livello ${currentLevel}. Prossimo livello!`);
+                        currentLevel++;
+                        playerX = 1;
+                        playerY = 1;
+                        maze = createMaze(gridSize);
+                        drawMaze();
+                    }
+                }
             }
+
+            // Inizializza il gioco
+            playerX = 1;
+            playerY = 1;
+            maze = createMaze(gridSize);
+            drawMaze();
         });
     </script>
 </body>
