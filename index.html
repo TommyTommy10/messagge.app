@@ -5,24 +5,28 @@
   <title>Sdolcinato vs Spicy</title>
   <style>
     body {
+      margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to bottom, #fff0f5, #ffe4e1);
+      overflow: hidden;
+      background-color: #fdf6f8;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
-      margin: 0;
+      position: relative;
     }
 
     h2 {
-      margin-bottom: 40px;
+      margin-bottom: 30px;
       color: #d6336c;
+      z-index: 2;
     }
 
     .switch-block {
       margin: 20px 0;
       text-align: center;
+      z-index: 2;
     }
 
     .switch {
@@ -66,20 +70,71 @@
       transform: translateX(32px);
     }
 
+    #spicy:checked + .slider {
+      background-color: #ff4500;
+    }
+
     .label-text {
       font-size: 20px;
       margin-bottom: 10px;
       color: #333;
     }
 
-    #spicy:checked + .slider {
-      background-color: #ff4500;
+    .bg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.8s ease;
+      background-size: cover;
+      background-position: center;
+      filter: blur(8px);
+    }
+
+    .bg.sdolcinato {
+      background-image: url('https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=1600&q=80');
+      animation: slideLeft 1s ease forwards;
+    }
+
+    .bg.spicy {
+      background-image: url('https://images.unsplash.com/photo-1608139745956-6b5c8f7b6c6e?auto=format&fit=crop&w=1600&q=80');
+      animation: slideRight 1s ease forwards;
+    }
+
+    @keyframes slideLeft {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
+    }
+
+    @keyframes slideRight {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .message {
+      position: absolute;
+      bottom: 40px;
+      font-size: 24px;
+      color: #fff;
+      background: rgba(0,0,0,0.4);
+      padding: 10px 20px;
+      border-radius: 20px;
+      z-index: 2;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .message.show {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
 
-  <h2>Come deve essere la storia?</h2>
+  <h2>Come ti senti oggi?</h2>
 
   <div class="switch-block">
     <div class="label-text">💖 Sdolcinato</div>
@@ -97,19 +152,43 @@
     </label>
   </div>
 
+  <div id="bg-sdolcinato" class="bg sdolcinato"></div>
+  <div id="bg-spicy" class="bg spicy"></div>
+  <div id="message" class="message"></div>
+
   <script>
     function toggleSwitch(activeId) {
       const sdolcinato = document.getElementById('sdolcinato');
       const spicy = document.getElementById('spicy');
+      const bgSdolcinato = document.getElementById('bg-sdolcinato');
+      const bgSpicy = document.getElementById('bg-spicy');
+      const message = document.getElementById('message');
 
       if (activeId === 'sdolcinato') {
-        if (sdolcinato.checked) spicy.checked = false;
+        if (sdolcinato.checked) {
+          spicy.checked = false;
+          bgSdolcinato.style.opacity = '1';
+          bgSpicy.style.opacity = '0';
+          message.textContent = 'Oggi si va di coccole 💕';
+          message.classList.add('show');
+        } else {
+          bgSdolcinato.style.opacity = '0';
+          message.classList.remove('show');
+        }
       } else {
-        if (spicy.checked) sdolcinato.checked = false;
+        if (spicy.checked) {
+          sdolcinato.checked = false;
+          bgSpicy.style.opacity = '1';
+          bgSdolcinato.style.opacity = '0';
+          message.textContent = 'Preparati a bruciare 🔥';
+          message.classList.add('show');
+        } else {
+          bgSpicy.style.opacity = '0';
+          message.classList.remove('show');
+        }
       }
     }
   </script>
 
 </body>
 </html>
-
