@@ -5,23 +5,31 @@
   <title>Sdolcinato vs Spicy</title>
   <style>
     body {
-      font-family: sans-serif;
-      text-align: center;
-      margin-top: 50px;
-      background-color: #fdf6f8;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #fff0f5, #ffe4e1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
     }
 
-    .switch-container {
-      display: flex;
-      justify-content: center;
-      gap: 40px;
+    h2 {
+      margin-bottom: 40px;
+      color: #d6336c;
+    }
+
+    .switch-block {
+      margin: 20px 0;
+      text-align: center;
     }
 
     .switch {
       position: relative;
       display: inline-block;
-      width: 60px;
-      height: 34px;
+      width: 70px;
+      height: 38px;
     }
 
     .switch input {
@@ -37,13 +45,13 @@
       right: 0; bottom: 0;
       background-color: #ccc;
       transition: .4s;
-      border-radius: 34px;
+      border-radius: 38px;
     }
 
     .slider:before {
       position: absolute;
       content: "";
-      height: 26px; width: 26px;
+      height: 30px; width: 30px;
       left: 4px; bottom: 4px;
       background-color: white;
       transition: .4s;
@@ -55,34 +63,38 @@
     }
 
     input:checked + .slider:before {
-      transform: translateX(26px);
+      transform: translateX(32px);
     }
 
-    label {
-      font-size: 18px;
-      margin-top: 10px;
-      display: block;
+    .label-text {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    #spicy:checked + .slider {
+      background-color: #ff4500;
     }
   </style>
 </head>
 <body>
 
   <h2>Come ti senti oggi?</h2>
-  <div class="switch-container">
-    <div>
-      <label for="sdolcinato">Sdolcinato</label>
-      <label class="switch">
-        <input type="checkbox" id="sdolcinato" onclick="toggleSwitch('sdolcinato')">
-        <span class="slider"></span>
-      </label>
-    </div>
-    <div>
-      <label for="spicy">Spicy</label>
-      <label class="switch">
-        <input type="checkbox" id="spicy" onclick="toggleSwitch('spicy')">
-        <span class="slider"></span>
-      </label>
-    </div>
+
+  <div class="switch-block">
+    <div class="label-text">💖 Sdolcinato</div>
+    <label class="switch">
+      <input type="checkbox" id="sdolcinato" onclick="toggleSwitch('sdolcinato')">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="switch-block">
+    <div class="label-text">🌶️ Spicy</div>
+    <label class="switch">
+      <input type="checkbox" id="spicy" onclick="toggleSwitch('spicy')">
+      <span class="slider"></span>
+    </label>
   </div>
 
   <script>
