@@ -95,7 +95,7 @@
     }
 
     .bg.sdolcinato {
-      background-image: url('https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=1600&q=80');
+      background-image: url('https://images.unsplash.com/photo-1607746882042-944635dfe10e?auto=format&fit=crop&w=1600&q=80');
       animation: slideLeft 1s ease forwards;
     }
 
@@ -117,14 +117,16 @@
     .message {
       position: absolute;
       bottom: 40px;
-      font-size: 24px;
+      font-size: 22px;
       color: #fff;
-      background: rgba(0,0,0,0.4);
-      padding: 10px 20px;
+      background: rgba(0,0,0,0.5);
+      padding: 12px 24px;
       border-radius: 20px;
       z-index: 2;
       opacity: 0;
       transition: opacity 0.5s ease;
+      max-width: 80%;
+      text-align: center;
     }
 
     .message.show {
@@ -169,7 +171,7 @@
           spicy.checked = false;
           bgSdolcinato.style.opacity = '1';
           bgSpicy.style.opacity = '0';
-          message.textContent = 'Oggi si va di coccole 💕';
+          message.textContent = 'Due amici si guardano. Uno vuole coccole, l’altro un bacio 💕';
           message.classList.add('show');
         } else {
           bgSdolcinato.style.opacity = '0';
@@ -180,7 +182,7 @@
           sdolcinato.checked = false;
           bgSpicy.style.opacity = '1';
           bgSdolcinato.style.opacity = '0';
-          message.textContent = 'Preparati a bruciare 🔥';
+          message.textContent = 'L’atmosfera si scalda. È il momento di osare 🔥';
           message.classList.add('show');
         } else {
           bgSpicy.style.opacity = '0';
