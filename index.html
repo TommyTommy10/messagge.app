@@ -1,394 +1,102 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Logic Labyrinth</title>
-    <style>
-        body {
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            font-family: sans-serif;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8">
+  <title>Sdolcinato vs Spicy</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background-color: #fdf6f8;
+    }
 
-        #game-container {
-            position: relative;
-            width: 95vmin;
-            height: 95vmin;
-            border: 2px solid #6c63ff;
-            background-color: #2e2e4a;
-            box-shadow: 0 0 15px rgba(108, 99, 255, 0.5);
-            margin: auto;
-        }
+    .switch-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+    }
 
-        #player {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background-color: #ff5722;
-            border-radius: 50%;
-            transition: all 0.2s linear;
-        }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
 
-        .wall {
-            position: absolute;
-            background-color: #6c63ff;
-        }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
 
-        .goal {
-            position: absolute;
-            background-color: #4CAF50;
-            opacity: 0.8;
-        }
-        
-        #puzzle-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0;
+      right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
 
-        #puzzle-box {
-            background-color: #2e2e4a;
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #6c63ff;
-            width: 80%;
-            max-width: 400px;
-        }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px; width: 26px;
+      left: 4px; bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
 
-        #puzzle-text {
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
+    input:checked + .slider {
+      background-color: #ff69b4;
+    }
 
-        #puzzle-input {
-            width: 80%;
-            padding: 10px;
-            font-size: 1.2em;
-            border-radius: 5px;
-            border: 1px solid #6c63ff;
-            background-color: #1a1a2e;
-            color: #e0e0e0;
-            margin-bottom: 10px;
-        }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
 
-        #puzzle-submit {
-            background-color: #6c63ff;
-            color: #fff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1.2em;
-        }
-
-        #controls {
-            margin-top: 20px;
-            display: grid;
-            grid-template-areas: ". up ." "left . right" ". down .";
-            width: 180px;
-        }
-        
-        .control-btn {
-            background-color: #6c63ff;
-            color: #fff;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 1.5em;
-            cursor: pointer;
-            margin: 5px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
-        }
-
-        #up { grid-area: up; }
-        #left { grid-area: left; }
-        #right { grid-area: right; }
-        #down { grid-area: down; }
-
-        #title {
-            position: absolute;
-            top: 20px;
-            width: 100%;
-            font-size: 2em;
-            color: #6c63ff;
-            text-shadow: 2px 2px 4px #000;
-        }
-
-    </style>
+    label {
+      font-size: 18px;
+      margin-top: 10px;
+      display: block;
+    }
+  </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div id="player"></div>
+  <h2>Come ti senti oggi?</h2>
+  <div class="switch-container">
+    <div>
+      <label for="sdolcinato">Sdolcinato</label>
+      <label class="switch">
+        <input type="checkbox" id="sdolcinato" onclick="toggleSwitch('sdolcinato')">
+        <span class="slider"></span>
+      </label>
     </div>
-
-    <div id="puzzle-overlay">
-        <div id="puzzle-box">
-            <p id="puzzle-text"></p>
-            <input type="text" id="puzzle-input" placeholder="La tua risposta">
-            <button id="puzzle-submit">Invia</button>
-        </div>
+    <div>
+      <label for="spicy">Spicy</label>
+      <label class="switch">
+        <input type="checkbox" id="spicy" onclick="toggleSwitch('spicy')">
+        <span class="slider"></span>
+      </label>
     </div>
+  </div>
 
-    <div id="controls">
-        <button id="up" class="control-btn">⬆️</button>
-        <button id="left" class="control-btn">⬅️</button>
-        <button id="right" class="control-btn">➡️</button>
-        <button id="down" class="control-btn">⬇️</button>
-    </div>
+  <script>
+    function toggleSwitch(activeId) {
+      const sdolcinato = document.getElementById('sdolcinato');
+      const spicy = document.getElementById('spicy');
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const gameContainer = document.getElementById('game-container');
-            const player = document.getElementById('player');
-            const puzzleOverlay = document.getElementById('puzzle-overlay');
-            const puzzleText = document.getElementById('puzzle-text');
-            const puzzleInput = document.getElementById('puzzle-input');
-            const puzzleSubmit = document.getElementById('puzzle-submit');
-            
-            const gridSize = 10;
-            const cellSize = gameContainer.clientWidth / gridSize;
-            let playerX = 0;
-            let playerY = 0;
-            
-            let currentPuzzle = {};
-            let currentLevel = 1;
-            let maze = [];
+      if (activeId === 'sdolcinato') {
+        if (sdolcinato.checked) spicy.checked = false;
+      } else {
+        if (spicy.checked) sdolcinato.checked = false;
+      }
+    }
+  </script>
 
-            // Aggiungo i controlli per il touch
-            document.getElementById('up').addEventListener('click', () => movePlayer('up'));
-            document.getElementById('down').addEventListener('click', () => movePlayer('down'));
-            document.getElementById('left').addEventListener('click', () => movePlayer('left'));
-            document.getElementById('right').addEventListener('click', () => movePlayer('right'));
-
-            function createMaze(size) {
-                const maze = Array(size).fill(null).map(() => Array(size).fill(1));
-                
-                function carve(x, y) {
-                    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-                    directions.sort(() => Math.random() - 0.5);
-
-                    for (const [dx, dy] of directions) {
-                        const nx = x + dx * 2;
-                        const ny = y + dy * 2;
-
-                        if (nx >= 0 && nx < size && ny >= 0 && ny < size && maze[ny][nx] === 1) {
-                            maze[y + dy][x + dx] = 0;
-                            maze[ny][nx] = 0;
-                            carve(nx, ny);
-                        }
-                    }
-                }
-
-                maze[1][1] = 0;
-                carve(1, 1);
-                
-                // Crea il percorso da inizio a fine
-                const path = new Array(size * size).fill(null).map(() => null);
-                const start = 1 * size + 1;
-                const end = (size - 2) * size + (size - 2);
-                
-                function findPath(pos) {
-                    const x = pos % size;
-                    const y = Math.floor(pos / size);
-                    if (pos === end) return true;
-                    
-                    const directions = [[0, 1], [0, -1], [1, 0], [-1, 0]];
-                    directions.sort(() => Math.random() - 0.5);
-                    
-                    for (const [dx, dy] of directions) {
-                        const nx = x + dx;
-                        const ny = y + dy;
-                        const npos = ny * size + nx;
-                        
-                        if (nx >= 0 && nx < size && ny >= 0 && ny < size && maze[ny][nx] === 0 && path[npos] === null) {
-                            path[npos] = pos;
-                            if (findPath(npos)) return true;
-                        }
-                    }
-                    return false;
-                }
-                
-                findPath(start);
-
-                // Aggiungi un puzzle ogni tot passi
-                let current = end;
-                let steps = 0;
-                while (current !== start) {
-                    steps++;
-                    if (steps % 5 === 0) { // Un puzzle ogni 5 celle
-                         const x = current % size;
-                         const y = Math.floor(current / size);
-                         if (x > 0 && y > 0 && x < size -1 && y < size - 1) {
-                             maze[y][x] = 2; // 2 = puzzle
-                         }
-                    }
-                    current = path[current];
-                }
-                
-                maze[1][1] = 0; // Punto di partenza libero
-                maze[size - 2][size - 2] = 3; // 3 = arrivo
-                return maze;
-            }
-
-            function drawMaze() {
-                gameContainer.innerHTML = '';
-                const cellSize = gameContainer.clientWidth / gridSize;
-                maze.forEach((row, y) => {
-                    row.forEach((cell, x) => {
-                        if (cell === 1) {
-                            const wall = document.createElement('div');
-                            wall.className = 'wall';
-                            wall.style.left = `${x * cellSize}px`;
-                            wall.style.top = `${y * cellSize}px`;
-                            wall.style.width = `${cellSize}px`;
-                            wall.style.height = `${cellSize}px`;
-                            gameContainer.appendChild(wall);
-                        } else if (cell === 2) {
-                            const puzzleGoal = document.createElement('div');
-                            puzzleGoal.className = 'goal';
-                            puzzleGoal.style.left = `${x * cellSize}px`;
-                            puzzleGoal.style.top = `${y * cellSize}px`;
-                            puzzleGoal.style.width = `${cellSize}px`;
-                            puzzleGoal.style.height = `${cellSize}px`;
-                            gameContainer.appendChild(puzzleGoal);
-                        } else if (cell === 3) {
-                            const finishGoal = document.createElement('div');
-                            finishGoal.className = 'goal';
-                            finishGoal.style.left = `${x * cellSize}px`;
-                            finishGoal.style.top = `${y * cellSize}px`;
-                            finishGoal.style.width = `${cellSize}px`;
-                            finishGoal.style.height = `${cellSize}px`;
-                            finishGoal.style.backgroundColor = '#FFD700'; // Oro
-                            gameContainer.appendChild(finishGoal);
-                        }
-                    });
-                });
-                updatePlayerPosition();
-            }
-
-            function updatePlayerPosition() {
-                const cellSize = gameContainer.clientWidth / gridSize;
-                player.style.left = `${playerX * cellSize}px`;
-                player.style.top = `${playerY * cellSize}px`;
-            }
-
-            function generatePuzzle(level) {
-                const type = Math.floor(Math.random() * 3);
-                let question, answer;
-
-                switch (type) {
-                    case 0: // Sequenza numerica
-                        const a = Math.floor(Math.random() * 5) + level;
-                        const b = Math.floor(Math.random() * 5) + level;
-                        const sequence = [a, a + b, a + b * 2, a + b * 3];
-                        question = `Qual è il prossimo numero in questa sequenza? ${sequence.join(', ')}, ?`;
-                        answer = a + b * 4;
-                        break;
-                    case 1: // Equazione semplice
-                        const op = ['+', '-', '*'][Math.floor(Math.random() * 3)];
-                        const num1 = Math.floor(Math.random() * 10) + level;
-                        const num2 = Math.floor(Math.random() * 10) + level;
-                        question = `Risolvi: ${num1} ${op} ${num2} = ?`;
-                        answer = eval(`${num1} ${op} ${num2}`);
-                        break;
-                    case 2: // Logica con simboli
-                        const shapes = ['▲', '■', '●', '★', '◆', '♥'];
-                        const ruleIndex = Math.floor(Math.random() * 2);
-                        const rule = ruleIndex === 0 ? 'Il prossimo simbolo è l\'opposto della posizione' : 'Ogni simbolo ripete il precedente';
-                        const startShape = shapes[Math.floor(Math.random() * shapes.length)];
-                        const nextShape = ruleIndex === 0 ? shapes[(shapes.indexOf(startShape) + 3) % shapes.length] : startShape;
-                        question = `Osserva la regola: ${rule}. Se il simbolo attuale è ${startShape}, qual è il prossimo? Usa il simbolo (ad es. '▲').`;
-                        answer = nextShape;
-                        break;
-                }
-                return { question, answer: String(answer).toLowerCase() };
-            }
-
-            function showPuzzle() {
-                currentPuzzle = generatePuzzle(currentLevel);
-                puzzleText.textContent = currentPuzzle.question;
-                puzzleInput.value = '';
-                puzzleOverlay.style.display = 'flex';
-            }
-
-            puzzleSubmit.addEventListener('click', () => {
-                const userAnswer = puzzleInput.value.trim().toLowerCase();
-                if (userAnswer === currentPuzzle.answer) {
-                    alert('Risposta corretta!');
-                    puzzleOverlay.style.display = 'none';
-                    // Sostituisci il muro con un percorso
-                    const x = playerX;
-                    const y = playerY;
-                    maze[y][x] = 0;
-                    drawMaze();
-                } else {
-                    alert('Risposta sbagliata, riprova.');
-                    puzzleInput.value = '';
-                }
-            });
-
-            function movePlayer(direction) {
-                let newX = playerX;
-                let newY = playerY;
-                const cellSize = gameContainer.clientWidth / gridSize;
-                
-                switch (direction) {
-                    case 'up': newY--; break;
-                    case 'down': newY++; break;
-                    case 'left': newX--; break;
-                    case 'right': newX++; break;
-                }
-
-                if (newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize) {
-                    const nextCell = maze[newY][newX];
-                    if (nextCell === 0) {
-                        playerX = newX;
-                        playerY = newY;
-                        updatePlayerPosition();
-                    } else if (nextCell === 2) { // Cella del puzzle
-                        playerX = newX;
-                        playerY = newY;
-                        updatePlayerPosition();
-                        showPuzzle();
-                    } else if (nextCell === 3) { // Cella di arrivo
-                        alert(`Congratulazioni! Hai completato il labirinto di livello ${currentLevel}. Prossimo livello!`);
-                        currentLevel++;
-                        playerX = 1;
-                        playerY = 1;
-                        maze = createMaze(gridSize);
-                        drawMaze();
-                    }
-                }
-            }
-
-            // Inizializza il gioco
-            playerX = 1;
-            playerY = 1;
-            maze = createMaze(gridSize);
-            drawMaze();
-        });
-    </script>
 </body>
 </html>
